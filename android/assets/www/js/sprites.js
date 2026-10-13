@@ -143,8 +143,171 @@ window.Sprites = (function () {
       case 'shelf': shelf(g, sx, sy, p.seed); break;
       case 'icicle': icicle(g, sx, sy, p.seed); break;
       case 'shrine': shrine(g, sx, sy, t); break;
+      // --- украшения данжа ---
+      case 'web': web(g, sx, sy, p.seed); break;
+      case 'body': bodyCorner(g, sx, sy, p.seed); break;
+      case 'barrel': emptyBarrel(g, sx, sy, p.seed); break;
+      case 'arrowwall': arrowWall(g, sx, sy, p.seed); break;
+      case 'sword': swordWall(g, sx, sy, p.seed); break;
     }
   }
+
+  // паутина: полотно с паучком
+  function web(g, sx, sy, seed) {
+    const rng = K.mulberry32(seed || 1);
+    const r = 16 + rng() * 10;
+    g.strokeStyle = 'rgba(225,225,235,.4)'; g.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+      const a = rng() * Math.PI * 2;
+      g.beginPath(); g.moveTo(sx, sy - 20);
+      g.lineTo(sx + Math.cos(a) * r, sy - 20 + Math.sin(a) * r * 0.6 + 10);
+      g.stroke();
+    }
+    for (let k = 1; k <= 3; k++) {
+      g.beginPath();
+      g.ellipse(sx, sy - 12, r * k / 3.2, r * k / 5.5, 0, 0, Math.PI * 2);
+      g.stroke();
+    }
+    g.fillStyle = '#2a2430';
+    g.beginPath(); g.arc(sx + r * 0.5, sy - 8, 1.6, 0, Math.PI * 2); g.fill();
+  }
+
+  // тело в углу: силуэт под тряпкой
+  function bodyCorner(g, sx, sy, seed) {
+    const rng = K.mulberry32(seed || 2);
+    const rot = (rng() - 0.5) * 0.6;
+    g.save();
+    g.translate(sx, sy); g.rotate(rot);
+    g.fillStyle = rng() < 0.5 ? '#4a4258' : '#54483a';
+    g.beginPath();
+    g.moveTo(-12, 0); g.quadraticCurveTo(-14, -10, -6, -12);
+    g.quadraticCurveTo(2, -16, 8, -10); g.quadraticCurveTo(12, -4, 8, 0);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#c8b49a'; g.lineWidth = 3; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(7, -8); g.lineTo(14, -3); g.stroke();
+    g.lineCap = 'butt';
+    g.restore();
+  }
+
+  // пустая бочка (на боку)
+  function emptyBarrel(g, sx, sy, seed) {
+    const rng = K.mulberry32(seed || 3);
+    shadowE(g, sx, sy + 1, 16, 6, .35);
+    g.save();
+    g.translate(sx, sy - 6);
+    g.rotate(rng() < 0.5 ? -0.35 : 0.3);
+    g.fillStyle = '#5e442c';
+    g.fillRect(-14, -7, 28, 14);
+    g.strokeStyle = '#3a2a18'; g.lineWidth = 1.3;
+    g.strokeRect(-14, -7, 28, 14);
+    g.beginPath(); g.moveTo(-14, -2); g.lineTo(14, -2); g.stroke();
+    g.beginPath(); g.moveTo(-14, 3); g.lineTo(14, 3); g.stroke();
+    g.fillStyle = '#1a120a';
+    g.beginPath(); g.ellipse(14, 0, 3, 6.5, 0, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+
+  // стрелы, торчащие из пола/стены
+  function arrowWall(g, sx, sy, seed) {
+    const rng = K.mulberry32(seed || 4);
+    const n = 3 + Math.floor(rng() * 3);
+    for (let i = 0; i < n; i++) {
+      const ax = sx + (rng() - 0.5) * 26, ay = sy + (rng() - 0.5) * 14;
+      const a = -Math.PI / 2 + (rng() - 0.5) * 0.9;
+      const len = 12 + rng() * 8;
+      g.strokeStyle = '#8a7a5a'; g.lineWidth = 1.6;
+      g.beginPath();
+      g.moveTo(ax, ay);
+      g.lineTo(ax + Math.cos(a) * len * 0.3, ay + Math.sin(a) * len);
+      g.stroke();
+      g.strokeStyle = '#c8b490'; g.lineWidth = 1.2;
+      g.beginPath();
+      g.moveTo(ax + Math.cos(a) * len * 0.3, ay + Math.sin(a) * len);
+      g.lineTo(ax + Math.cos(a) * len * 0.3 + 4, ay + Math.sin(a) * len - 3);
+      g.stroke();
+    }
+  }
+
+  // меч в полу
+  function swordWall(g, sx, sy, seed) {
+    const rng = K.mulberry32(seed || 5);
+    const a = -Math.PI / 2 + (rng() - 0.5) * 0.7;
+    g.save();
+    g.translate(sx, sy); g.rotate(a + Math.PI / 2);
+    const grd = g.createLinearGradient(0, -20, 0, 6);
+    grd.addColorStop(0, '#b8c4d8'); grd.addColorStop(1, '#6a7488');
+    g.fillStyle = grd;
+    g.beginPath();
+    g.moveTo(-2.4, -22); g.lineTo(2.4, -22); g.lineTo(1.6, 6); g.lineTo(-1.6, 6);
+    g.closePath(); g.fill();
+    g.fillStyle = '#8a6a30';
+    g.fillRect(-6, -22, 12, 3);
+    g.fillStyle = '#4a3220';
+    g.fillRect(-1.5, -30, 3, 8);
+    g.restore();
+  }
+
+  // летучая мышь: порхает по эллипсу
+  function drawBat(g, sx, sy, t, seed) {
+    const ph = t * 3 + seed;
+    const flap = Math.sin(ph * 14);
+    const yy = sy - 70 - Math.sin(ph) * 10 - Math.sin(ph * 2.2) * 6;
+    g.fillStyle = 'rgba(30,24,40,.9)';
+    g.beginPath(); g.ellipse(sx, yy, 3, 4.5, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath();
+    g.moveTo(sx - 2, yy);
+    g.quadraticCurveTo(sx - 10, yy - 6 * flap - 4, sx - 15, yy - 2 * flap);
+    g.quadraticCurveTo(sx - 9, yy + 3, sx - 2, yy + 2);
+    g.fill();
+    g.beginPath();
+    g.moveTo(sx + 2, yy);
+    g.quadraticCurveTo(sx + 10, yy - 6 * flap - 4, sx + 15, yy - 2 * flap);
+    g.quadraticCurveTo(sx + 9, yy + 3, sx + 2, yy + 2);
+    g.fill();
+    g.beginPath(); g.moveTo(sx - 2, yy - 4); g.lineTo(sx - 3, yy - 7); g.lineTo(sx - 0.5, yy - 4.5); g.fill();
+    g.beginPath(); g.moveTo(sx + 2, yy - 4); g.lineTo(sx + 3, yy - 7); g.lineTo(sx + 0.5, yy - 4.5); g.fill();
+    g.fillStyle = '#ffd060';
+    g.fillRect(sx - 1.8, yy - 1, 1.2, 1);
+    g.fillRect(sx + 0.6, yy - 1, 1.2, 1);
+  }
+
+  // таракан: суета по полу
+  function drawRoach(g, sx, sy, t, seed) {
+    const ph = t * 2 + seed;
+    const wig = Math.sin(ph * 26) * 2;
+    const yy = sy - 2 + Math.sin(ph * 3);
+    g.fillStyle = '#3a2a20';
+    g.beginPath(); g.ellipse(sx + wig * 0.5, yy, 3.4, 2, wig * 0.1, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#3a2a20'; g.lineWidth = 0.7;
+    g.beginPath(); g.moveTo(sx + wig * 0.5 + 3, yy - 0.5); g.lineTo(sx + wig * 0.5 + 6, yy - 2 + wig); g.stroke();
+    g.beginPath(); g.moveTo(sx + wig * 0.5 + 3, yy + 0.5); g.lineTo(sx + wig * 0.5 + 6, yy + 2 + wig); g.stroke();
+    g.beginPath(); g.moveTo(sx - 1 + wig, yy + 2); g.lineTo(sx - 2 + wig, yy + 4); g.stroke();
+    g.beginPath(); g.moveTo(sx + 1 + wig, yy + 2); g.lineTo(sx + 2 + wig, yy + 4); g.stroke();
+  }
+
+  // привидение: медленно проплывает, полупрозрачное
+  function drawGhostCritter(g, sx, sy, t, seed) {
+    const ph = t * 0.5 + seed;
+    const drift = Math.sin(ph) * 40;
+    const yy = sy - 55 + Math.sin(ph * 1.7) * 12;
+    g.save();
+    g.globalAlpha = 0.35 + 0.12 * Math.sin(t * 2 + seed);
+    g.fillStyle = '#cfe0f8';
+    g.beginPath();
+    g.moveTo(sx + drift - 9, yy + 14);
+    g.quadraticCurveTo(sx + drift - 11, yy - 12, sx + drift, yy - 16);
+    g.quadraticCurveTo(sx + drift + 11, yy - 12, sx + drift + 9, yy + 14);
+    for (let i = 0; i < 3; i++)
+      g.quadraticCurveTo(sx + drift + 9 - i * 6 - 3, yy + 14 + (i % 2 ? 4 : -2) + Math.sin(t * 3 + i) * 2,
+                         sx + drift + 9 - (i + 1) * 6, yy + 14);
+    g.closePath(); g.fill();
+    g.fillStyle = '#3a4a68';
+    g.beginPath(); g.ellipse(sx + drift - 3, yy - 4, 1.8, 2.6, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(sx + drift + 3, yy - 4, 1.8, 2.6, 0, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+
+
 
   function shadowE(g, sx, sy, rx, ry, a) {
     g.fillStyle = 'rgba(0,0,5,' + (a || 0.4) + ')';
@@ -1115,6 +1278,7 @@ window.Sprites = (function () {
     prepare, drawFloor, drawWall, drawHazard, drawProp, drawTorch,
     drawStairs, drawDoor, drawPortal, drawChest,
     drawPlayer, drawDemon, makeWhip,
+    drawBat, drawRoach, drawGhostCritter,
     drawCoin, drawHeartPickup, drawPotionPickup, drawRelicPickup,
     drawGemPickup, drawWeaponPickup,
     drawHeart, shadowE,

@@ -846,6 +846,19 @@ window.game = null;
       }
       ctx.globalAlpha = 1;
 
+      // --- живность данжа: мыши, тараканы, привидения (до света) ---
+      if (lvl.critters) {
+        for (const c of lvl.critters) {
+          if (this.tileVis(c.x, c.y) !== 2) continue;
+          const wx = c.x - 0.5 + Math.sin(t * 0.7 + c.seed) * c.range * 0.3;
+          const wy = c.y - 0.5 + Math.cos(t * 0.5 + c.seed) * c.range * 0.3;
+          const csx = K.isoX(wx, wy), csy = K.isoY(wx, wy) + K.TH / 2;
+          if (c.kind === 'bat') Sprites.drawBat(ctx, csx, csy, t, c.seed);
+          else if (c.kind === 'roach') Sprites.drawRoach(ctx, csx, csy, t, c.seed);
+          else Sprites.drawGhostCritter(ctx, csx, csy, t, c.seed);
+        }
+      }
+
       // --- лагерь: ковёр/постройки рисуются под объектами ---
       if (lvl.isCamp) { CampScene.drawDecor(ctx, t); CampScene.drawStructures(ctx, t); }
 

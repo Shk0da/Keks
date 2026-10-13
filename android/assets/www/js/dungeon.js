@@ -362,10 +362,58 @@ window.Dungeon = (function () {
           bones: { blocks: false, light: false },
           candle: { blocks: false, light: true },
           brazier: { blocks: true, light: true },
+          // украшения: паутина, тела в углах, бочки, стрелы/мечи в стенах
+          web: { deco: true }, body: { deco: true }, barrel: { deco: true },
+          arrowwall: { deco: true }, sword: { deco: true },
         }[type];
+        if (def.deco) {
+          // декор — чаще и без «жирной» проверки проходимости (не блокирует)
+          props.push({ type, x, y, blocks: false, light: false, deco: true, seed: K.irange(rng, 0, 9999) });
+          continue;
+        }
         props.push({ type, x, y, blocks: def.blocks, light: def.light, seed: K.irange(rng, 0, 9999) });
       }
     }
+    // паутина на стенах и стрелы/мечи — россыпью по стенам комнат
+    for (const r of rooms) {
+      const n2 = K.irange(rng, 2, 5);
+      for (let i = 0; i < n2; i++) {
+        const side = K.irange(rng, 0, 3);
+        let tx, ty;
+        if (side === 0) { tx = K.irange(rng, r.x, r.x + r.w - 1); ty = r.y - 1; }
+        else if (side === 1) { tx = K.irange(rng, r.x, r.x + r.w - 1); ty = r.y + r.h; }
+        else if (side === 2) { tx = r.x - 1; ty = K.irange(rng, r.y, r.y + r.h - 1); }
+        else { tx = r.x + r.w; ty = K.irange(rng, r.y, r.y + r.h - 1); }
+        if (inB(tx, ty) && tiles[idx(tx, ty)] === 2) {
+          props.push({
+            type: K.chance(rng, 0.6) ? 'web' : K.chance(rng, 0.5) ? 'arrowwall' : 'sword',
+            x: tx + 0.5, y: ty + 0.5, blocks: false, light: false, deco: true,
+            seed: K.irange(rng, 0, 9999),
+          });
+        }
+      }
+    }
+    // летучие мыши (декор-анимация) и редкие привидения
+    const critters = [];
+    const nBats = K.irange(rng, 3, 7);
+    for (let i = 0; i < nBats; i++) {
+      const r = K.choice(rng, rooms.filter(q => !q.entry) || rooms);
+      if (!r) break;
+      critters.push({ kind: 'bat', x: r.x + 0.5 + rng() * (r.w - 1), y: r.y + 0.5 + rng() * (r.h - 1),
+        seed: rng() * 100, range: 2 + rng() * 3 });
+    }
+    if (K.chance(rng, 0.5)) {
+      const r = K.choice(rng, rooms.filter(q => !q.entry) || rooms);
+      if (r) critters.push({ kind: 'ghost', x: r.cx + 0.5, y: r.cy + 0.5, seed: rng() * 100, range: 5 + rng() * 4 });
+    }
+    for (let i = 0; i < K.irange(rng, 4, 9); i++) {
+      // тараканы возятся по полу у стен
+      const r = K.choice(rng, rooms.filter(q => !q.entry) || rooms);
+      if (!r) break;
+      critters.push({ kind: 'roach', x: r.x + 0.5 + rng() * (r.w - 1), y: r.y + 0.5 + rng() * (r.h - 1),
+        seed: rng() * 100, range: 1.5 + rng() * 1.5 });
+    }
+
     // алтарь-бафф в случайной комнате
     if (K.chance(rng, 0.75)) {
       const r = K.choice(rng, rooms.filter(r => r !== entryRoom) || rooms);
@@ -463,7 +511,7 @@ window.Dungeon = (function () {
     function cy0(r) { return r.cy + 0.5; }
 
     return {
-      w: W, h: H, tiles, rooms, props, torches, chests, spawns, entry, exit,
+      w: W, h: H, tiles, rooms, props, torches, chests, spawns, entry, exit, critters,
       theme, depth, isBoss,
       vis: new Uint8Array(W * H),   // 0 неведомо, 1 помним, 2 видно
       flow: new Int16Array(W * H), flowAge: 99,
