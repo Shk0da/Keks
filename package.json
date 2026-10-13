@@ -5,7 +5,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node tools/check-www.mjs",
+    "test": "node tools/check-www.mjs && node tools/test-save.mjs",
     "build": "bash tools/build-apk.sh"
   }
 }

@@ -176,6 +176,23 @@
       this.adXpT = 0;                            // ×2 опыт от ролика, сек
       this.trophies = save.trophies || 0;        // «трофеи» для фабрики
       this.factory = save.factory || { imps: 0, acc: 0, lastTs: Date.now() };
+      // квесты: главы, поручения, открытые NPC — раньше не читались из сейва
+      this.quests = save.quests || { main: null, side: null, prao: null, done: {}, unlocked: {} };
+      {
+        const q = this.quests;
+        q.done = q.done || {}; q.unlocked = q.unlocked || {};
+        // перепривязать определения глав к живым данным (в сейве — копии)
+        for (const k of ['main', 'prao']) {
+          if (q[k] && q[k].def) {
+            const live = (DATA.QUESTS.find(x => x.id === q[k].def.id)) ||
+                         (DATA.PRAO_QUEST && DATA.PRAO_QUEST.id === q[k].def.id ? DATA.PRAO_QUEST : null);
+            if (live) q[k].def = live;
+            else q[k] = null;   // определение исчезло — квест сброшен
+          }
+        }
+        if (!q.main) q.main = null;
+        if (!q.prao) q.prao = null;
+      }
     }
 
     // ---------- производные ----------
