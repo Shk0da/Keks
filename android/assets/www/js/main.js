@@ -357,9 +357,12 @@ window.game = null;
         const a = K.angTo(p.x, p.y, e.x, e.y);
         if (Math.abs(K.angDiff(p.facing, a)) > arc / 2) continue;
         this.hitEnemy(e, dmgMult);
-        // отбрасывание
-        const kb = 2.4;
-        e.kbX = Math.cos(a) * kb * 60; e.kbY = Math.sin(a) * kb * 60;
+        // лёгкий толчок живым (убитые и так гасят инерцию в die());
+        // скольжение ослаблено вчетверо — мобы умирают там, где стояли
+        if (!e.dead) {
+          const kb = 1.2;
+          e.kbX = Math.cos(a) * kb * 40; e.kbY = Math.sin(a) * kb * 40;
+        }
         hitAny = true;
         if (d < nearestD) { nearestD = d; nearestHit = e; }
       }
@@ -380,7 +383,7 @@ window.game = null;
         const d = K.dist(p.x, p.y, e.x, e.y);
         if (d > R + e.r) continue;
         this.hitEnemy(e, mult, { noCombo: true });
-        if (p.skill('wind')) {
+        if (p.skill('wind') && !e.dead) {
           const a = K.angTo(p.x, p.y, e.x, e.y);
           const kb = 140 * (1 + 0.6 * p.skill('wind'));
           e.kbX = Math.cos(a) * kb; e.kbY = Math.sin(a) * kb;
