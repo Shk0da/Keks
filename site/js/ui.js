@@ -8,6 +8,8 @@ window.UI = (function () {
   // ===================== Режим лагеря =====================
   function campMode(on) {
     $('hud').classList.toggle('camp-mode', !!on);
+    const bi = $('btnInteract');
+    if (bi) bi.classList.toggle('hidden', !on);   // .hidden!important сильнее CSS-режима
     if (on) $('hud').classList.remove('hidden');
   }
   // возврат из оверлеев в сцену лагеря
