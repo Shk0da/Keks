@@ -107,68 +107,80 @@ window.Dungeon = (function () {
     return { tiles, rooms };
   }
 
-  // ---------- планировка: катакомбы (узкий лабиринт + кельи) ----------
-  // Ходы шириной в один тайл (DFS-лабиринт на нечётной сетке), ~12% стен
-  // снесено в петли — меньше ходьбы назад; поверх — 4–6 кельи-камер,
-  // тупики становятся нишами (там встают саркофаги). Всё связно по построению.
+  // ---------- планировка: катакомбы (лабиринт с широкими ходами) ----------
+  // По-диабловски: ходы в две плитки (клетки 2×2, стены в одну), DFS-лабиринт,
+  // ~12% стен снесено в петли; поверх 4–6 кельи-камер, тупики — ниши
+  // под саркофаги. Всё связно по построению.
   function genCatacombs(rng) {
     const tiles = new Uint8Array(W * H);
-    const CW = (W - 1) >> 1, CH = (H - 1) >> 1;      // 27×27 клеток
-    const visited = new Uint8Array(CW * CH);
-    const cell = (cx, cy) => [cx * 2 + 1, cy * 2 + 1];
-    const scx = 1 + Math.floor(rng() * CW), scy = 1 + Math.floor(rng() * CH);
-    visited[scy * CW + scx] = 1;
-    tiles[idx(...cell(scx, scy))] = 1;
+    const CN = 17;                                     // 17×17 клеток, шаг 3 тайла
+    const cellX = c => 1 + c * 3, cellY = c => 1 + c * 3;
+    const carveCell = (cx, cy) => {
+      const px = cellX(cx), py = cellY(cy);
+      for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) tiles[idx(px + i, py + j)] = 1;
+    };
+    const carveLink = (cx, cy, dx, dy) => {
+      const px = cellX(cx), py = cellY(cy);
+      // стена между клеткой (cx,cy) и соседом: колонка/строка по направлению
+      const wx = px + (dx === 1 ? 2 : dx === -1 ? -1 : 0);
+      const wy = py + (dy === 1 ? 2 : dy === -1 ? -1 : 0);
+      if (dx) { tiles[idx(wx, py)] = 1; tiles[idx(wx, py + 1)] = 1; }
+      else    { tiles[idx(px, wy)] = 1; tiles[idx(px + 1, wy)] = 1; }
+    };
+    const visited = new Uint8Array(CN * CN);
+    const scx = Math.floor(rng() * CN), scy = Math.floor(rng() * CN);
+    visited[scy * CN + scx] = 1;
+    carveCell(scx, scy);
     const stack = [[scx, scy]];
     const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     while (stack.length) {
       const [cx, cy] = stack[stack.length - 1];
       const dirs = DIRS.slice();
-      for (let i = dirs.length - 1; i > 0; i--) {   // перемешать
+      for (let i = dirs.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
         [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
       }
       let moved = false;
       for (const [dx, dy] of dirs) {
         const nx = cx + dx, ny = cy + dy;
-        if (nx < 0 || ny < 0 || nx >= CW || ny >= CH || visited[ny * CW + nx]) continue;
-        visited[ny * CW + nx] = 1;
-        const [px, py] = cell(cx, cy), [qx, qy] = cell(nx, ny);
-        tiles[idx(qx, qy)] = 1;
-        tiles[idx((px + qx) / 2, (py + qy) / 2)] = 1;  // проём между клетками
+        if (nx < 0 || ny < 0 || nx >= CN || ny >= CN || visited[ny * CN + nx]) continue;
+        visited[ny * CN + nx] = 1;
+        carveCell(nx, ny);
+        carveLink(cx, cy, dx, dy);
         stack.push([nx, ny]);
         moved = true;
         break;
       }
       if (!moved) stack.pop();
     }
-    // петли: сносим часть стен, чтобы лабиринт не был деревом
-    for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
-      if (cx + 1 < CW && rng() < 0.12) tiles[idx(cx * 2 + 2, cy * 2 + 1)] = 1;
-      if (cy + 1 < CH && rng() < 0.12) tiles[idx(cx * 2 + 1, cy * 2 + 2)] = 1;
+    // петли: сносим часть стоящих стен, чтобы лабиринт не был деревом
+    for (let cy = 0; cy < CN; cy++) for (let cx = 0; cx < CN; cx++) {
+      if (cx + 1 < CN && rng() < 0.12) carveLink(cx, cy, 1, 0);
+      if (cy + 1 < CN && rng() < 0.12) carveLink(cx, cy, 0, 1);
     }
     // кельи-камеры поверх лабиринта
     const rooms = [];
     const nCh = 4 + Math.floor(rng() * 3);
     for (let i = 0; i < nCh; i++) {
-      const w = 5 + Math.floor(rng() * 4), h = 5 + Math.floor(rng() * 4);
-      const x = 1 + 2 * Math.floor(rng() * Math.max(1, (W - w - 2) / 2));
-      const y = 1 + 2 * Math.floor(rng() * Math.max(1, (H - h - 2) / 2));
+      const w = 6 + Math.floor(rng() * 4), h = 6 + Math.floor(rng() * 4);
+      const x = 1 + Math.floor(rng() * Math.max(1, W - w - 3));
+      const y = 1 + Math.floor(rng() * Math.max(1, H - h - 3));
       for (let j = y; j < y + h && j < H - 1; j++)
         for (let ii = x; ii < x + w && ii < W - 1; ii++) tiles[idx(ii, j)] = 1;
       rooms.push({ x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) });
     }
     // ниши и развилки — маркеры для саркофагов/спавнов
     let extra = 0;
-    for (let cy = 0; cy < CH && extra < 14; cy++) for (let cx = 0; cx < CW && extra < 14; cx++) {
-      const [px, py] = cell(cx, cy);
+    for (let cy = 0; cy < CN && extra < 12; cy++) for (let cx = 0; cx < CN && extra < 12; cx++) {
+      const px = cellX(cx), py = cellY(cy);
+      if (tiles[idx(px, py)] !== 1) continue;
       let open = 0;
-      for (const [dx, dy] of DIRS) if (tiles[idx(px + dx, py + dy)] === 1) open++;
-      if (open >= 3 && rng() < 0.2) {                       // развилка
-        rooms.push({ x: px - 1, y: py - 1, w: 3, h: 3, cx: px, cy: py, cave: true });
+      for (const [dx, dy] of DIRS) if (tiles[idx(px + dx * 3, py + dy * 3)] === 1) open++;
+      if (open >= 3 && rng() < 0.25) {
+        rooms.push({ x: px - 1, y: py - 1, w: 4, h: 4, cx: px, cy: py, cave: true });
         extra++;
-      } else if (open === 1 && rng() < 0.3) {               // ниша-тупик
-        rooms.push({ x: px - 1, y: py - 1, w: 3, h: 3, cx: px, cy: py, cave: true, niche: true });
+      } else if (open === 1 && rng() < 0.35) {
+        rooms.push({ x: px - 1, y: py - 1, w: 4, h: 4, cx: px, cy: py, cave: true, niche: true });
         extra++;
       }
     }
@@ -505,7 +517,8 @@ window.Dungeon = (function () {
 
   // отладочный хук: план без пост-обработки (для тестов связности)
   const __plan = (gen, rng) =>
-    gen === 'cave' ? genCave(rng) : gen === 'cross' ? genCross(rng) : genRooms(rng);
+    gen === 'cave' ? genCave(rng) : gen === 'cross' ? genCross(rng) :
+    gen === 'catacombs' ? genCatacombs(rng) : genRooms(rng);
 
   return { generate, isWall, isHazard, updateFOV, updateFlow, W, H, idx, inB, __plan };
 })();
