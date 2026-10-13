@@ -834,16 +834,27 @@ window.game = null;
             const e = it.o;
             const sx = K.isoX(e.x - 0.5, e.y - 0.5), sy = K.isoY(e.x - 0.5, e.y - 0.5) + K.TH / 2;
             const dieDur = e.crown ? 1.4 : 1.0;
-            ctx.globalAlpha = e.dead ? K.clamp(e.dieT / dieDur, 0, 1) : 1;
             if (e.dead) {
-              // финал: дрожит стоя → на пике стона падает навзничь → звёздочки
+              // гибель: дрожит стоя → валится вокруг центра корпуса (не улетает)
+              // → лёжа мерцает, как старый спрайт, и гаснет → звёздочки
               const prog = 1 - K.clamp(e.dieT / dieDur, 0, 1);
-              e.hitT = prog < 0.55 ? 0.9 : Math.max(0, 0.4 - prog);   // дрожь нарастает, стихает в отлёте
-              const kFall = prog < 0.55 ? 0 : Math.pow((prog - 0.55) / 0.45, 1.7);
+              e.hitT = prog < 0.45 ? 0.9 : 0;
+              const fp = prog < 0.45 ? 0 : (prog - 0.45) / 0.55;      // фаза падения
+              const fall = Math.pow(fp, 1.6);                          // разгон: валится всё быстрее
+              const ang = -1.35 * fall + 0.1 * Math.sin(fp * Math.PI) * (1 - fp); // лёгкий шлепок в конце
+              // мерцание: половина времени — мигает, к концу тусклее и реже
+              let alpha;
+              if (prog < 0.45) alpha = 1;
+              else {
+                const blink = Math.sin(t * 32 + (e.x + e.y) * 7) > (0.2 - (1 - prog) * 0.5) ? 1 : 0.22;
+                alpha = K.clamp((1 - prog) * 2.4, 0, 1) * blink;
+              }
+              ctx.globalAlpha = alpha;
+              const cx0 = sx + 4 * (e.size || 1), cy0 = sy - 26 * (e.size || 1); // центр корпуса
               ctx.save();
-              ctx.translate(sx, sy);
-              ctx.rotate(-1.15 * kFall);
-              ctx.translate(-sx, -sy);
+              ctx.translate(cx0, cy0 + 3 * (e.size || 1) * fall);     // оседает вниз
+              ctx.rotate(ang);
+              ctx.translate(-cx0, -cy0);
               Sprites.drawDemon(ctx, e, sx, sy, t);
               ctx.restore();
               // Cartoon-звёздочки над лежащей головой
@@ -867,6 +878,7 @@ window.game = null;
                   ctx.restore();
                 }
               }
+              ctx.globalAlpha = 1;   // мерцающий alpha не должен утекать дальше
             } else {
               // аура элитки: пульсирующее кольцо цвета первого аффикса
               if (e.elite) {
@@ -884,8 +896,8 @@ window.game = null;
                 ctx.textAlign = 'left';
               }
               Sprites.drawDemon(ctx, e, sx, sy, t);
+              ctx.globalAlpha = 1;
             }
-            ctx.globalAlpha = 1;
             // полоска HP
             if (!e.dead && e.aggro) {
               const w = 34 * (e.size || 1);
