@@ -953,7 +953,7 @@ window.game = null;
               const fp = prog < 0.45 ? 0 : (prog - 0.45) / 0.55;      // фаза падения
               const fall = Math.pow(fp, 1.4);                          // оседает с разгоном
               const squashY = 1 - 0.62 * fall;                         // тело опадает вниз
-              const squashX = 1 + 0.18 * fall;                         // и чуть расползается
+              const squashX = 1;                                       // строго на месте
               // мерцание: половина времени — мигает, к концу тусклее и реже
               let alpha;
               if (prog < 0.45) alpha = 1;
@@ -963,9 +963,8 @@ window.game = null;
               }
               ctx.globalAlpha = alpha;
               ctx.save();
-              ctx.translate(sx, sy + 2 * (e.size || 1) * fall);
+              ctx.translate(sx, sy);
               ctx.scale(squashX, squashY);
-              ctx.rotate(-0.12 * fall);                                // едва заметный наклон
               ctx.translate(-sx, -sy);
               Sprites.drawDemon(ctx, e, sx, sy, t);
               ctx.restore();

@@ -625,6 +625,7 @@
     }
 
     update(dt, game) {
+      if (this.dead) return;   // труп неподвижен: ни КБ, ни хуки, ни аффиксы
       const p = game.player;
       // хук моба: своя логика каждый кадр (см. docs/EXTENDING.md)
       if (this.def.onTick) this.def.onTick(this, game, dt);
@@ -790,6 +791,7 @@
 
     die(game) {
       this.dead = true; this.dieT = 1.0;
+      this.kbX = 0; this.kbY = 0; this.lungeT = 0;   // падает там, где стояла
       AudioSys.sfx('edie');                                // крещендо-финал
       if (Math.random() < 0.55)
         game.dmgNums.add(this.x, this.y - 0.2, K.choice(Math.random, DATA.CLIMAX_QUIPS), 'quip');
