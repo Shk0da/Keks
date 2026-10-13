@@ -1,0 +1,7 @@
+<script>
+fetch('index.html').then(r=>r.text()).then(h=>{
+  const t=Date.now();
+  h=h.replace(/src="js\/([a-z]+\.js)"/g,'src="js/$1?t='+t+'"');
+  document.open(); document.write(h); document.close();
+});
+</script>

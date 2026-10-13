@@ -697,10 +697,23 @@
         }
       }
 
-      // отбрасывание
+      // отбрасывание: kb задан в пикселях/сек — переводим в тайлы (/K.TW);
+      // с мгновенной коллизией — сквозь стены не проскочить
       if (Math.abs(this.kbX) > 1 || Math.abs(this.kbY) > 1) {
-        this.x += this.kbX * dt; this.y += this.kbY * dt;
+        this.x += this.kbX / K.TW * dt; this.y += this.kbY / K.TW * dt;
         this.kbX *= Math.pow(0.001, dt); this.kbY *= Math.pow(0.001, dt);
+        game.collideCircle(this);
+      }
+      // страховка: если всё же оказался в стене — вернуться в последнюю
+      // безопасную точку (запоминаем её каждый кадр на открытом полу)
+      if (Dungeon.isWall(game.level, this.x, this.y)) {
+        this.x = this.lgx != null ? this.lgx : this.x;
+        this.y = this.lgy != null ? this.lgy : this.y;
+      } else if (!Dungeon.isWall(game.level, this.x + 0.25, this.y) ||
+                 !Dungeon.isWall(game.level, this.x - 0.25, this.y) ||
+                 !Dungeon.isWall(game.level, this.x, this.y + 0.25) ||
+                 !Dungeon.isWall(game.level, this.x, this.y - 0.25)) {
+        this.lgx = this.x; this.lgy = this.y;
       }
 
       // выпад (hunter)

@@ -385,7 +385,7 @@ window.game = null;
         this.hitEnemy(e, mult, { noCombo: true });
         if (p.skill('wind') && !e.dead) {
           const a = K.angTo(p.x, p.y, e.x, e.y);
-          const kb = 140 * (1 + 0.6 * p.skill('wind'));
+          const kb = Math.min(120, 90 + 15 * p.skill('wind'));
           e.kbX = Math.cos(a) * kb; e.kbY = Math.sin(a) * kb;
           e.slowT = 1.4 + 0.4 * p.skill('wind');
         }
