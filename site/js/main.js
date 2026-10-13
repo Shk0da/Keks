@@ -201,6 +201,7 @@ window.game = null;
       this.paused = false;
       this.doorOpen = 0;
       this._fatWarned = false;
+      if (window.QuestSys) QuestSys.onDepth(p, depth);
       // карточка входа на этаж (диабловское затемнение с названием)
       this.transitionT = 1.15;
       UI.floorCard(depth);
@@ -472,6 +473,7 @@ window.game = null;
     },
     onEnemyDead(e) {
       this.floorKills++;
+      if (window.QuestSys) QuestSys.onKill(this.player, e);
       // «Азарт»: фраг продолжает цепочку (урон по герою рвёт её в playerHurt)
       const p = this.player;
       p.streak++;
@@ -501,6 +503,7 @@ window.game = null;
     bossDefeated(b) {
       this.bossDead = true;
       this.exitPortal = { x: b.x, y: b.y };
+      if (window.QuestSys) QuestSys.onBossDefeated(this.player, this.level.depth);
       UI.dialogue(b.bd.name, K.choice(Math.random, b.bd.outro));
       UI.dialogue('Кекс', 'Портал открыт. Реликвия моя. Совесть по-прежнему у входа.');
       SaveSys.save(this);

@@ -7,7 +7,7 @@ window.UI = (function () {
 
   // ===================== Экраны =====================
   const screens = ['scrAge', 'scrTitle', 'scrAbout', 'scrCamp', 'scrSkills',
-    'scrArmory', 'scrRelics', 'scrTrader', 'scrSettings', 'scrDescend', 'scrDead', 'scrPause'];
+    'scrArmory', 'scrRelics', 'scrTrader', 'scrNpc', 'scrSettings', 'scrDescend', 'scrDead', 'scrPause'];
   let settingsFrom = 'title'; // куда возвращаться из настроек
 
   function show(name) {
@@ -165,6 +165,11 @@ window.UI = (function () {
       buffHtml += '<span class="buffPill" style="--bcol:#ffd860">🔥 Азарт ×' +
         game.streakMult.toFixed(1) + ' (' + p.streak + ')</span>';
     }
+    // трекер активного задания
+    if (window.QuestSys && game.state === 'dungeon') {
+      const tr = QuestSys.tracker(p);
+      if (tr) buffHtml += '<span class="buffPill" style="--bcol:#c86aff">📜 ' + tr.text + '</span>';
+    }
     for (const [k, label] of fxMap) {
       const t = p.fx ? p.fx[k] : 0;
       if (t > 0) buffHtml += '<span class="buffPill" style="--bcol:' +
@@ -240,6 +245,133 @@ window.UI = (function () {
     clearTimeout(b._t);
     b._t = setTimeout(() => b.classList.add('hidden'), 3300);
   }
+
+  // ===================== Жители и квесты =====================
+  let npcOpen = null;
+
+  function npcQuestState(p, npcId) {
+    const st = QuestSys.state(p);
+    const slots = { main: st.main, side: st.side, prao: st.prao };
+    for (const s of ['main', 'prao', 'side']) {
+      const aq = slots[s];
+      if (aq && aq.def.npc === npcId) {
+        return { slot: s, aq, done: QuestSys.questComplete(aq) };
+      }
+    }
+    // есть ли предложение
+    if (npcId === 'veks') {
+      if (QuestSys.mainOffer(p) && QuestSys.mainOffer(p).npc === 'veks') return { offer: 'main', def: QuestSys.mainOffer(p) };
+      if (!st.side) return { offer: 'side', def: QuestSys.genSide() };
+    }
+    if (npcId === 'moza') {
+      const o = QuestSys.mainOffer(p);
+      if (o && o.npc === 'moza') return { offer: 'main', def: o };
+    }
+    if (npcId === 'prao') {
+      const o = QuestSys.praoOffer(p);
+      if (o) return { offer: 'prao', def: o };
+    }
+    return {};
+  }
+
+  function renderNpcs() {
+    const p = game.player;
+    const box = $('campNpcs');
+    let html = '';
+    for (const id of ['veks', 'moza', 'prao']) {
+      if (!QuestSys.npcUnlocked(p, id)) continue;
+      const n = DATA.NPCS[id];
+      const qs = npcQuestState(p, id);
+      let mark = '';
+      if (qs.aq) mark = qs.done ? '<span class="npc-mark done">?</span>' : '<span class="npc-mark" style="color:var(--rose)">…</span>';
+      else if (qs.offer) mark = '<span class="npc-mark q">!</span>';
+      html += '<div class="npc-card" data-npc="' + id + '" style="--ncol:' + n.col + '">' +
+        '<span class="npc-face" style="border-color:' + n.col + ';box-shadow:0 0 10px ' + K.rgba(n.col, 0.35) + '">' + n.glyph + '</span>' +
+        '<span><b>' + n.name + '</b>поговорить</span>' + mark + '</div>';
+    }
+    box.innerHTML = html || '<span class="dim" style="font-size:12px">Жители появятся по мере твоих подвигов…</span>';
+    box.querySelectorAll('.npc-card').forEach(el => {
+      el.onclick = () => openNpc(el.dataset.npc);
+    });
+  }
+
+  function openNpc(id) {
+    const p = game.player;
+    const n = DATA.NPCS[id];
+    npcOpen = id;
+    $('npcHead').innerHTML = '<span class="npc-face" style="border-color:' + n.col + ';box-shadow:0 0 14px ' + K.rgba(n.col, 0.4) + '">' + n.glyph + '</span>' +
+      '<h2>' + n.name + '</h2>';
+    const qs = npcQuestState(p, id);
+    let body = '<div class="npc-story">' + K.choice(Math.random, n.greet) + '</div>';
+    let actions = '<button class="btn" onclick="UI.closeNpc()">Уйти</button>';
+
+    if (qs.aq) {
+      const aq = qs.aq;
+      body += '<div class="npc-quest"><h4>«' + aq.def.name + '»</h4>';
+      aq.def.goal.forEach((o, i) => {
+        const done = QuestSys.objText(o, aq.prog[i]);
+        const ok = aq.prog[i] >= (o.n != null ? o.n : 1);
+        body += '<div class="npc-obj' + (ok ? ' ok' : '') + '">• ' + done + '</div>';
+      });
+      body += '</div>';
+      if (qs.done) {
+        const rw = aq.def.reward || {};
+        const rwTxt = [rw.gold && rw.gold + '💰', rw.xp && rw.xp + 'опыта', rw.potions && rw.potions + ' зелий',
+                       rw.relic != null && 'реликвия', rw.gems && rw.gems[1] + '× камень', rw.relicUnique && 'УНИКАЛЬНАЯ реликвия']
+          .filter(Boolean).join(', ');
+        body += '<div class="npc-story" style="color:var(--gold)">Награда: ' + rwTxt + '</div>';
+        actions = '<button class="btn primary" onclick="UI.turnInNpc(\'' + qs.slot + '\')">Выполнено! Получить награду</button>' + actions;
+      }
+    } else if (qs.offer) {
+      const d = qs.offer === 'side' ? qs.def : qs.def;
+      body += '<div class="npc-quest"><h4>«' + d.name + '»</h4><div class="npc-story">' +
+        (d.story ? d.story.join('<br>') : 'Поручение простое, а плата — звонкая.') + '</div>';
+      d.goal.forEach(o => {
+        body += '<div class="npc-obj">• ' + QuestSys.objText(o, 0) + '</div>';
+      });
+      body += '</div>';
+      actions = '<button class="btn primary" onclick="UI.acceptNpc(\'' + qs.offer + '\')">Принять</button>' + actions;
+    } else if (id === 'veks') {
+      body += '<div class="dim" style="font-size:12px">Кстати, витрина — вон там. Товар не смотрит в зубы.</div>';
+      actions += ' <button class="btn" onclick="UI.openTraderFromNpc()">К товарам</button>';
+    } else if (id === 'moza') {
+      body += '<div class="dim" style="font-size:12px">Печать терпелива. Глубины — нет.</div>';
+    } else if (id === 'prao') {
+      body += '<div class="dim" style="font-size:12px">Дно всегда ниже, чем кажется. Проверено.</div>';
+    }
+    $('npcBody').innerHTML = body + '<div class="npc-actions">' + actions + '</div>';
+    AudioSys.sfx('ui');
+    show('npc');
+  }
+
+  function closeNpc() { AudioSys.sfx('uiBack'); show('camp'); }
+
+  function acceptNpc(slot) {
+    const p = game.player;
+    if (slot === 'side') QuestSys.accept(p, 'side', QuestSys.genSide());
+    else {
+      const def = slot === 'prao' ? QuestSys.praoOffer(p) : QuestSys.mainOffer(p);
+      if (def) QuestSys.accept(p, slot, def);
+    }
+    AudioSys.sfx('charm');
+    openNpc(npcOpen);
+  }
+
+  function turnInNpc(slot) {
+    const p = game.player;
+    const def = QuestSys.turnIn(p, slot);
+    if (!def) return;
+    UI.toast('✓ ' + def.name, 'gold');
+    if (def.outro) setTimeout(() => UI.dialogue(def.npc === 'veks' ? 'Мадам Векс' :
+      def.npc === 'moza' ? 'Мозаика' : 'Праотец', def.outro), 600);
+    if (def.final) {
+      setTimeout(() => UI.bossBannerShow('ПЕЧАТЬ ВОССТАНОВЛЕНА', 'цензура спасена — стыд восторжествовал'), 1400);
+    }
+    openNpc(npcOpen);
+  }
+
+  function openTraderFromNpc() { show('trader'); }
+
 
   // ===================== Оружейная =====================
   let armorySel = null;
@@ -401,6 +533,7 @@ window.UI = (function () {
   // ===================== Лагерь =====================
   function onCamp() {
     const p = game.player;
+    renderNpcs();
     const hrs = (p.playtime / 3600);
     const needDepth = Math.ceil(0.8 * p.level);
     let advice;
@@ -703,6 +836,7 @@ window.UI = (function () {
 
   return {
     init, show, hideAll, updateHUD, goldPing, toast, dialogue, bossBannerShow, floorCard,
+    openNpc, closeNpc, acceptNpc, turnInNpc, openTraderFromNpc,
     move, get settings() { return settings; },
   };
 })();

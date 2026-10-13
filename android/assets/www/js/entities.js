@@ -503,6 +503,7 @@
         weapons: this.weapons, equippedWeapon: this.equippedWeapon, gems: this.gems,
         perm: this.perm, bought: this.bought, depth: this.depth,
         bestDepth: this.bestDepth, kills: this.kills, playtime: this.playtime,
+        quests: this.quests || { main: null, side: null, prao: null, done: {}, unlocked: {} },
         buffs: {},
       };
     }
@@ -963,6 +964,7 @@
           UI.goldPing(p);
         } else if (this.kind === 'gem') {
           p.gems.push(this.val);
+          if (window.QuestSys) QuestSys.onPickup(p, 'gem', this.val);
           AudioSys.sfx('relic');
           UI.toast('Камень: ' + DATA.gemName(this.val) + ' — ' + DATA.gemTxt(this.val), 'gold');
           SaveSys.save(game);
@@ -976,6 +978,7 @@
             UI.toast('Дубликат «' + w.name + '» → ' + comp + '💰 и камень', 'gold');
           } else {
             p.weapons.owned[w.id] = { sharp: 0, gems: [] };
+            if (window.QuestSys) QuestSys.onWeapon(p, w);
             AudioSys.sfx('relic');
             UI.dialogue('Кекс', 'Новое оружие: «' + w.name + '». ' + w.quip);
             UI.toast('Оружие: ' + w.name + ' ' + '★'.repeat(w.tier), 'gold');
@@ -985,6 +988,7 @@
           p.hp = K.clamp((p.hp || p.maxHp) + this.val, 0, p.maxHp);
           AudioSys.sfx('heart');
           game.dmgNums.add(p.x, p.y, this.val, 'heal');
+          if (window.QuestSys) QuestSys.onPickup(p, 'heart');
         } else if (this.kind === 'potion') {
           const pd = DATA.POTION_BY_ID(this.val);
           p.potions[this.val] = (p.potions[this.val] || 0) + 1;

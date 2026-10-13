@@ -238,6 +238,25 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   padding:4px 9px;font-size:11.5px;color:var(--muted);cursor:pointer}
 .gem-chip .dot{display:inline-block;width:8px;height:8px;border-radius:2px;transform:rotate(45deg);margin-right:5px}
 
+/* жители лагеря и их диалоги */
+.npc-row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.npc-card{display:flex;align-items:center;gap:8px;background:rgba(15,8,22,.6);
+  border:1px solid rgba(255,150,200,.2);border-radius:12px;padding:6px 12px 6px 7px;
+  cursor:pointer;font-size:12.5px;color:var(--muted)}
+.npc-card b{color:var(--ink);display:block;font-size:13px}
+.npc-face{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:19px;border:2px solid var(--ncol,#fff);background:rgba(10,5,16,.9)}
+.npc-mark{font-size:15px;margin-left:2px}
+.npc-mark.q{color:var(--gold)} .npc-mark.done{color:var(--good)}
+.npc-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.npc-head .npc-face{width:54px;height:54px;font-size:27px}
+.npc-head h2{margin:0}
+.npc-story{font-style:italic;color:var(--muted);line-height:1.55;margin:8px 0 12px;font-size:13.5px}
+.npc-quest h4{font-family:var(--serif);color:var(--rose);margin-bottom:4px}
+.npc-obj{font-size:12.5px;color:var(--ink);margin:2px 0 2px 6px}
+.npc-obj.ok{color:var(--good)}
+.npc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
 /* торговка */
 .trader-stock{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:12px}
 .tr-it{background:rgba(15,8,22,.6);border:1px solid rgba(255,150,200,.16);border-radius:10px;

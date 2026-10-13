@@ -573,6 +573,7 @@ window.DATA = (function () {
     { id: 'crit_eye',   name: 'Намётанный Глаз',    slot: 'ring',   bonus: { critPct: 6 }, txt: 'Крит +6%' },
     { id: 'thorn_rose', name: 'Роза с Шипами',      slot: 'ring',   bonus: { thorns: 6 },  txt: 'Отражает 6 урона' },
     { id: 'vamp_lip',   name: 'Губы Вампирши',      slot: 'amulet', bonus: { leech: 4 },   txt: 'Похищает 4% урона в HP' },
+    { id: 'tear_of_ancestor', name: 'Слеза Праотца', slot: 'amulet', bonus: { dmgPct: 15, hpPct: 10 }, txt: 'Урон +15%, здоровье +10%' },
   ];
 
   // ================= ЗЕЛЬЯ =================
@@ -650,6 +651,103 @@ window.DATA = (function () {
     for (const k in w) { roll -= w[k]; if (roll <= 0) return k; }
     return 'heal';
   }
+
+  // ================= NPC И КВЕСТЫ =================
+  // NPC лагеря: unlock(p) — условие появления (однократно, запоминается).
+  const NPCS = {
+    veks: { id: 'veks', name: 'Мадам Векс', glyph: '💋', col: '#ff7ab8',
+      greet: ['Заходи, красавчик. Товар свежий, сплетни — ещё свежее.',
+              'Плащ носи гордо. Остальное — по акции.'] },
+    moza: { id: 'moza', name: 'Цензоресса Мозаика', glyph: '▦', col: '#c86aff',
+      unlock: p => !!(p.quests && p.quests.done && p.quests.done.q1),
+      greet: ['Ты носишь его хлыст. Значит, ты — последняя надежда приличия.',
+              'Печать Цензуры трещит. Слышишь этот стон? Это не удовольствие. Это она.'] },
+    prao: { id: 'prao', name: 'Призрак Праотца', glyph: '🕯', col: '#9ec2ff',
+      unlock: p => p.bestDepth >= 20,
+      greet: ['Хмм. Плащ мой. Наглость — тоже моя. Наследник вышел удачный.',
+              'Я не смог дойти до дна. Дойдёшь ты — или хотя бы попробуй.'] },
+  };
+
+  // Цели квестов (движок в quests.js):
+  //   {kind:'kill', target:'hunter'|'any', n}   {kind:'bossKill', n}
+  //   {kind:'bossDepth', depth} (босс с глубины ≥)  {kind:'collect', what:'heart'|'gem'|'potion', n}
+  //   {kind:'gemRarity', rar, n}  {kind:'weaponTier', tier}  {kind:'depth', depth}
+  // Награды: gold, xp, relic(rarity), gems(rarity,n), potions, permDmg.
+  const QUESTS = [
+    { id: 'q1', npc: 'veks', name: 'Стон из глубин',
+      story: ['На пятой глубине кто-то стонет. Не от удовольствия — я разбираюсь.',
+              'Сходи, щёлкни по носу ихнего «главного». И слушай внимательно: из тьмы ответит та, кого мы ищем.'],
+      goal: [{ kind: 'bossDepth', depth: 5 }],
+      reward: { gold: 250 },
+      outro: 'Из тьмы пятой глубины тебе ответила Цензоресса Мозаика — голосом, мерцающим как её пиксели. Она ждёт тебя в лагере.',
+      next: 'q2' },
+    { id: 'q2', npc: 'moza', name: 'Печать Первого Круга',
+      story: ['Владычица Глубин раздробила Печать Цензуры на осколки.',
+              'Камни из недр держат форму. Принеси мне три любых — я сплету первый круг печати.'],
+      goal: [{ kind: 'collect', what: 'gem', n: 3 }],
+      reward: { gold: 300, xp: 120 },
+      outro: 'Круг сплетён. Мозаика на миг проступила сквозь плащ и подмигнула. Кекс покраснел. Мозаика тоже.',
+      next: 'q3' },
+    { id: 'q3', npc: 'moza', name: 'Испытание плащом',
+      story: ['Печать не признает слабака. Покажи характер: двадцать пять охотниц-суккуб.',
+              'Они быстрее всех. И злее всех. Как моя бабушка.'],
+      goal: [{ kind: 'kill', target: 'hunter', n: 25 }],
+      reward: { gold: 350, relic: 1 },
+      outro: 'Печать признала тебя. Где-то в глубинах Владычица сломала ноготь — от ярости.',
+      next: 'q4' },
+    { id: 'q4', npc: 'moza', name: 'Сердца недовольных',
+      story: ['Барьер держится на чувствах. Подходят любые — восторг, обида, влюблённость.',
+              'Принеси десять сердец. Они сами к тебе липнут, я видела.'],
+      goal: [{ kind: 'collect', what: 'heart', n: 10 }],
+      reward: { gold: 300, potions: 2 },
+      outro: 'Барьер дышит. Мозаика впервые улыбнулась — мозаично, пиксель к пикселю.',
+      next: 'q5' },
+    { id: 'q5', npc: 'moza', name: 'Печать Второго Круга',
+      story: ['Второй круг требует стали и подвига: оружие не ниже третьего тира',
+              'и два повержённых босса. Владычица заметит тебя. Пусть боится.'],
+      goal: [{ kind: 'weaponTier', tier: 3 }, { kind: 'bossKill', n: 2 }],
+      reward: { gold: 500, gems: [2, 2] },
+      outro: 'Второй круг сомкнулся. Теперь Владычица знает твоё имя. И, кажется, сохранила его в дневник.',
+      next: 'q6' },
+    { id: 'q6', npc: 'moza', name: 'Владычица Глубин',
+      story: ['Финал. Двадцать пятая глубина. Она держит меня в жемчужной клетке из стыда.',
+              'Разбей её. Освободи меня. И пусть весь мир наконец увидит… как красиво работает цензура.'],
+      goal: [{ kind: 'bossDepth', depth: 25 }],
+      reward: { gold: 1000, relicUnique: 'tear_of_ancestor' },
+      outro: 'Мозаика свободна. Печать Цензуры восстановлена, хлыст Праотца мерцает достойно, а лагерь получил нового — и самого пиксельного — жителя. Титры. Аплодисменты. Глубины бесконечны — а теперь и сюжет тоже: Векс всегда найдёт поручение.',
+      final: true },
+  ];
+
+  // Поручения Векс — бесконечные, генерируются из шаблонов
+  const SIDE_TEMPLATES = [
+    { name: () => 'Сводить счёты: ' + DATA.ENEMIES.hunter.name,
+      goal: p => [{ kind: 'kill', target: 'hunter', n: 15 }],
+      reward: () => ({ gold: 220 }) },
+    { name: () => 'Крылышки пощипать: ' + DATA.ENEMIES.harpy.name,
+      goal: p => [{ kind: 'kill', target: 'harpy', n: 15 }],
+      reward: () => ({ gold: 220 }) },
+    { name: () => 'Ядовитый завтрак: ' + DATA.ENEMIES.lamia.name,
+      goal: p => [{ kind: 'kill', target: 'lamia', n: 12 }],
+      reward: () => ({ gold: 240 }) },
+    { name: () => 'Любой ценой',
+      goal: p => [{ kind: 'kill', target: 'any', n: 25 }],
+      reward: () => ({ gold: 280 }) },
+    { name: () => 'Аптечка лагеря',
+      goal: p => [{ kind: 'collect', what: 'potion', n: 3 }],
+      reward: () => ({ gold: 200, potions: 1 }) },
+    { name: () => 'Блестяшки для витрины',
+      goal: p => [{ kind: 'collect', what: 'gem', n: 2 }],
+      reward: () => ({ gold: 260 }) },
+  ];
+
+  // Побочный квест Праотца: звёздный камень за наследие
+  const PRAO_QUEST = { id: 'pq1', npc: 'prao', name: 'Звёздный камень',
+    story: ['Один камень. Звёздный. Редчайший. Как моя молодость.',
+            'Принеси — и я поделюсь тем, что осталось от моей силы. Спойлер: немного. Но твоё.'],
+    goal: [{ kind: 'gemRarity', rar: 4, n: 1 }],
+    reward: { gold: 800, gems: [3, 2] },
+    outro: 'Праотец выдохнул туман, и в твоих руках блеснули два безупречных камня. «Не прощёлкай», — сказал он и растаял до следующего раза.' };
+
 
   // ================= ТОРГОВКА =================
   const TRADER = {
@@ -749,6 +847,7 @@ window.DATA = (function () {
     ATTACKS, runAttack, BOSS_PATTERNS, WEAPON_TRAITS, runWeaponTrait,
     MAX_LEVEL, XP_A, XP_P, XP_G, xpFatigue, lvlHpMul, lvlDmgMul, threat,
     POTIONS, POTION_BY_ID, potionDrop,
+    NPCS, QUESTS, SIDE_TEMPLATES, PRAO_QUEST,
     ELITE_CHANCE, ELITE_AFFIXES,
     WEAPONS, WEAPON_BY_ID, SHARP_MAX, SHARP_STEP, sharpCost, tierForDepth,
     GEM_TYPES, GEM_RARITIES, GEM_KEY, gemInstance, gemValue, gemName, gemTxt, weaponDrop,

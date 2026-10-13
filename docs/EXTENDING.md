@@ -180,6 +180,28 @@ giant: {
 дроп (`potionDrop`), торговка и сейв подхватят новое зелье по списку
 `POTIONS` автоматически.
 
+## 4½. Квесты и NPC
+
+NPC — запись в `NPCS` (портрет-глиф, реплики `greet`, `unlock(p)` —
+условие появления, запоминается однократно). Квест — запись в `QUESTS`
+(или шаблон в `SIDE_TEMPLATES` для бесконечных поручений):
+
+```js
+{ id: 'q7', npc: 'moza', name: 'Новая глава',
+  story: ['реплика 1', 'реплика 2'],
+  goal: [{ kind: 'kill', target: 'widow', n: 10 }, { kind: 'collect', what: 'gem', n: 2 }],
+  reward: { gold: 400, relic: 2 },
+  outro: 'финальная реплика при сдаче', next: null }
+```
+
+Виды целей: `kill target|any`, `bossKill n`, `bossDepth depth`,
+`collect heart|gem|potion|relic`, `gemRarity rar`, `weaponTier tier`,
+`depth`. Движок (`js/quests.js`) сам считает прогресс по хукам игры
+(убийства, подборы, боссы, глубина) — новых видов целей достаточно
+добавить в объект `OBJ` (текст + условие завершения).
+
+---
+
 ## 5. Камни, реликвии, темы
 
 - **Камень**: вид в `GEM_TYPES` (`base` — процент при редкости ×1) +
