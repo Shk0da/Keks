@@ -33,65 +33,37 @@ window.AdSys = (function () {
   }
 
   // показать «ролик»: по завершении — onReward(); закрыть раньше — onSkip()
+  // ПОКА РЕАЛЬНОЙ РЕКЛАМЫ НЕТ: награда выдаётся мгновенно под баннером
+  // «Мы убрали рекламу» — ждём и таймеры убраны. При подключении SDK сюда
+  // возвращается показ ролика (см. README, «Монетизация»).
   function showRewarded(placement, onReward, onSkip) {
     const g = window.game;
-    AudioSys.sfx('ui');
-    // билет пропуска: мгновенная награда без просмотра
-    if (tickets() > 0) {
-      takeTicket();
-      UI.toast('🎟 Билет пропуска: награда без рекламы!', 'gold');
-      SaveSys.save(g);
-      onReward();
-      return;
-    }
-    const ov = ensureOverlay();
-    ov.classList.remove('hidden');
-    const count = ov.querySelector('.ad-count');
-    const claim = ov.querySelector('.ad-claim');
-    claim.disabled = true;
-    let left = REWARDED_LEN;
-    count.textContent = left + '…';
-    clearInterval(timer);
-    timer = setInterval(() => {
-      left--;
-      if (left > 0) { count.textContent = left + '…'; return; }
-      clearInterval(timer);
-      count.textContent = 'Ролик просмотрен ✓';
-      claim.disabled = false;
-    }, 1000);
-    claim.onclick = () => {
-      ov.classList.add('hidden');
-      UI.toast('Награда получена', 'gold');
-      if (g && g.player) g.player._adRewards = (g.player._adRewards || 0) + 1;
-      SaveSys.save(g);
-      onReward();
-    };
+    AudioSys.sfx('relic');
+    showNoAdsBanner();
+    if (g && g.player) g.player._adRewards = (g.player._adRewards || 0) + 1;
+    SaveSys.save(g);
+    onReward();
   }
 
-  // межстраничная: строго между активностями, не чаще кулдауна, не в бою
+  // межстраничная: без сети не показываем вовсе — никого не прерываем
   function maybeInterstitial(g) {
-    if (!g || !g.player) return false;
-    const p = g.player;
-    const last = p._lastInterstitial || -1e9;
-    if (p.playtime - last < INTERSTITIAL_COOLDOWN) return false;
-    p._lastInterstitial = p.playtime;
-    const ov = ensureOverlay();
-    ov.classList.remove('hidden');
-    const count = ov.querySelector('.ad-count');
-    const claim = ov.querySelector('.ad-claim');
-    claim.disabled = true;
-    count.textContent = '3…';
-    let left = 3;
-    clearInterval(timer);
-    timer = setInterval(() => {
-      left--;
-      if (left > 0) { count.textContent = left + '…'; return; }
-      clearInterval(timer);
-      count.textContent = 'Спасибо за терпение ♥';
-      claim.disabled = false;
-      claim.onclick = () => ov.classList.add('hidden');
-    }, 1000);
-    return true;
+    return false;
+  }
+
+  // баннер «Мы убрали рекламу»: полоска сверху, 2.2 сек, сама исчезает
+  let bannerEl = null, bannerT = null;
+  function showNoAdsBanner() {
+    if (!bannerEl) {
+      bannerEl = document.createElement('div');
+      bannerEl.id = 'noAdsBanner';
+      bannerEl.innerHTML = '<b>Мы убрали рекламу</b><span>награда — сразу, без ролика ♥</span>';
+      document.body.appendChild(bannerEl);
+    }
+    bannerEl.classList.remove('show');
+    void bannerEl.offsetWidth;
+    bannerEl.classList.add('show');
+    clearTimeout(bannerT);
+    bannerT = setTimeout(() => bannerEl.classList.remove('show'), 2200);
   }
 
   // заработок билетов: +1 за босса
