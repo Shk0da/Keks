@@ -25,11 +25,16 @@ window.Dungeon = (function () {
     // коридоры: цепочка + пара циклов
     const link = (a, b) => {
       let x = a.cx, y = a.cy;
-      const horFirst = rng() < 0.5;
-      const carve = () => { tiles[idx(x, y)] = 1; tiles[idx(K.clamp(x + 1, 0, W - 1), y)] = 1; };
+      // проходы шириной 3 клетки: столбики/саркофаги не запирают путь
+      const carve = () => {
+        for (let d = -1; d <= 1; d++) {
+          if (inB(x + d, y)) tiles[idx(x + d, y)] = 1;
+          if (inB(x, y + d)) tiles[idx(x, y + d)] = 1;
+        }
+      };
       while (x !== b.cx) { carve(); x += x < b.cx ? 1 : -1; }
       while (y !== b.cy) { carve(); y += y < b.cy ? 1 : -1; }
-      tiles[idx(x, y)] = 1;
+      carve();
     };
     for (let i = 1; i < rooms.length; i++) link(rooms[i - 1], rooms[i]);
     for (let k = 0; k < 2 && rooms.length > 3; k++) {
@@ -113,19 +118,19 @@ window.Dungeon = (function () {
   // под саркофаги. Всё связно по построению.
   function genCatacombs(rng) {
     const tiles = new Uint8Array(W * H);
-    const CN = 17;                                     // 17×17 клеток, шаг 3 тайла
-    const cellX = c => 1 + c * 3, cellY = c => 1 + c * 3;
+    const CN = 13;                                     // 13×13 клеток, шаг 4 тайла
+    const cellX = c => 1 + c * 4, cellY = c => 1 + c * 4;
     const carveCell = (cx, cy) => {
       const px = cellX(cx), py = cellY(cy);
-      for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) tiles[idx(px + i, py + j)] = 1;
+      for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) tiles[idx(px + i, py + j)] = 1;
     };
     const carveLink = (cx, cy, dx, dy) => {
       const px = cellX(cx), py = cellY(cy);
-      // стена между клеткой (cx,cy) и соседом: колонка/строка по направлению
-      const wx = px + (dx === 1 ? 2 : dx === -1 ? -1 : 0);
-      const wy = py + (dy === 1 ? 2 : dy === -1 ? -1 : 0);
-      if (dx) { tiles[idx(wx, py)] = 1; tiles[idx(wx, py + 1)] = 1; }
-      else    { tiles[idx(px, wy)] = 1; tiles[idx(px + 1, wy)] = 1; }
+      // стена-перемычка между клетками: колонка/строка по направлению (3 тайла)
+      const wx = px + (dx === 1 ? 3 : dx === -1 ? -1 : 0);
+      const wy = py + (dy === 1 ? 3 : dy === -1 ? -1 : 0);
+      if (dx) { for (let j = 0; j < 3; j++) tiles[idx(wx, py + j)] = 1; }
+      else    { for (let i = 0; i < 3; i++) tiles[idx(px + i, wy)] = 1; }
     };
     const visited = new Uint8Array(CN * CN);
     const scx = Math.floor(rng() * CN), scy = Math.floor(rng() * CN);
@@ -175,7 +180,7 @@ window.Dungeon = (function () {
       const px = cellX(cx), py = cellY(cy);
       if (tiles[idx(px, py)] !== 1) continue;
       let open = 0;
-      for (const [dx, dy] of DIRS) if (tiles[idx(px + dx * 3, py + dy * 3)] === 1) open++;
+      for (const [dx, dy] of DIRS) if (tiles[idx(px + dx * 4, py + dy * 4)] === 1) open++;
       if (open >= 3 && rng() < 0.25) {
         rooms.push({ x: px - 1, y: py - 1, w: 4, h: 4, cx: px, cy: py, cave: true });
         extra++;
@@ -388,7 +393,14 @@ window.Dungeon = (function () {
     for (let i = 0; i < W * H; i++) solidBase[i] = (tiles[i] === 0 || tiles[i] === 2) ? 1 : 0;
     const pathsExist = (blocks) => {
       const blocked = new Uint8Array(solidBase);
-      for (const b of blocks) blocked[idx(b[0] | 0, b[1] | 0)] = 1;
+      // «жирный» блок: столбик занимает свою клетку и мешает соседним —
+      // если даже так путь заперт, столбик не ставится
+      for (const b of blocks) {
+        const bx = b[0] | 0, by = b[1] | 0;
+        blocked[idx(bx, by)] = 1;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]])
+          if (inB(bx + dx, by + dy)) blocked[idx(bx + dx, by + dy)] = 1;
+      }
       const seen = new Uint8Array(W * H);
       const start = idx(entry.x | 0, entry.y | 0);
       if (blocked[start]) return false;

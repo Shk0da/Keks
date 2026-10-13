@@ -16,7 +16,14 @@ function check(lvl) {
     const t = lvl.tiles[i];
     blocked[i] = (t === 0 || t === 2) ? 1 : 0;
   }
-  for (const pr of lvl.props) if (pr.blocks) blocked[(pr.y | 0) * W + (pr.x | 0)] = 1;
+  const fat = (x, y) => {
+    blocked[y * W + x] = 1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < W && ny < H) blocked[ny * W + nx] = 1;
+    }
+  };
+  for (const pr of lvl.props) if (pr.blocks) fat(pr.x | 0, pr.y | 0);
   const targets = [];
   if (lvl.exit) targets.push(lvl.exit);
   else if (lvl.spawns.length) targets.push(lvl.spawns[0]);
