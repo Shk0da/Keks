@@ -112,6 +112,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   background:radial-gradient(circle at 35% 30%,rgba(190,60,120,.95),rgba(70,15,50,.95))}
 .abtn{width:66px;height:66px}
 #btnSpin{right:128px;bottom:22px}
+#btnSpatter{right:236px;bottom:36px;width:60px;height:60px;font-size:12px;
+  background:radial-gradient(circle at 35% 30%,rgba(220,225,255,.95),rgba(60,70,110,.95))}
 #btnDash{right:170px;bottom:110px}
 #btnCharm{right:40px;bottom:-4px}
 .abtn.cd{filter:grayscale(.8) brightness(.6)}

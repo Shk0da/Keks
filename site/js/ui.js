@@ -206,6 +206,7 @@ window.UI = (function () {
     setCd($('btnSpin'), p.spinCd / p.spinCdMax);
     setCd($('btnDash'), p.dashCd / p.dashCdMax);
     setCd($('btnCharm'), p.charmCd / p.charmCdMax);
+    setCd($('btnSpatter'), p.spatterCd / p.spatterCdMax);
   }
   function setCd(btn, f) {
     f = K.clamp(f, 0, 1);
@@ -826,6 +827,7 @@ window.UI = (function () {
     // HUD-кнопки
     tapFast('btnAtk', () => game.state === 'dungeon' && game.player.tryAttack(game));
     tapFast('btnSpin', () => game.state === 'dungeon' && game.player.trySpin(game));
+    tapFast('btnSpatter', () => game.state === 'dungeon' && game.player.trySpatter(game));
     tapFast('btnDash', () => game.state === 'dungeon' && game.player.tryDash(game));
     tapFast('btnCharm', () => game.state === 'dungeon' && game.player.tryCharm(game));
     tap('btnPause', () => game.togglePause());

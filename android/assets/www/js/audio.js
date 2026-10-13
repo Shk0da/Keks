@@ -304,6 +304,13 @@ window.AudioSys = (function () {
                tone({ f0: 880, f1: 1230, dur: 0.7, vol: 0.06, atk: 0.15, delay: 0.1, send: 0.7 });
                moan(300, 420, 0.6, 0.05, 0.15); },
     denied() { tone({ f0: 180, f1: 130, dur: 0.12, vol: 0.14, type: 'square', lp: 900, exp: true }); },
+    spatter() { // белые брызги из хлыста: влажный всплеск + капли
+      noise({ f0: 2400, f1: 700, dur: 0.14, vol: 0.4, q: 1.4, atk: 0.004, send: 0.4 });
+      thump(300, 120, 0.08, 0.18, 0, 0.2);
+      [1500, 1150, 880].forEach((f, i) =>
+        tone({ f0: f, f1: f * 0.55, dur: 0.07, vol: 0.09, atk: 0.004, delay: 0.05 + i * 0.05, send: 0.45 }));
+      moan(360, 260, 0.2, 0.05, 0.02);
+    },
     death()  {
       [330, 262, 196, 131].forEach((f, i) => tone({ f0: f, f1: f * 0.96, dur: 0.45, vol: 0.16, type: 'triangle', atk: 0.04, delay: i * 0.23, send: 0.55 }));
       moan(240, 90, 1.2, 0.1, 0.3, 0.7);

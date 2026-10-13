@@ -165,6 +165,7 @@
       this.spinT = 0; this.spinCd = 0; this.spinTickT = 0;
       this.dashT = 0; this.dashCd = 0; this.dashDx = 0; this.dashDy = 0;
       this.charmCd = 0;
+      this.spatterCd = 0;
       this.iframes = 0;
       this.hitFlash = 0;
       this.drinkT = 0;                     // поза пития зелья
@@ -278,6 +279,7 @@
     }
     get dashCdMax() { return 2.2 * (1 - (this.hasSkill('flap') ? 0.15 * this.skill('flap') : 0)) * (1 - this.relicBonus('cdPct') / 100); }
     get spinCdMax() { return 5.5 * (1 - this.relicBonus('cdPct') / 100); }
+    get spatterCdMax() { return 0.9 * (1 - this.relicBonus('cdPct') / 100); }
     get charmCdMax() { return 7 * (1 - this.relicBonus('cdPct') / 100); }
     get spinDur() { return 1.4 + (this.hasSkill('longer') ? 0.3 * this.skill('longer') : 0); }
     // откалиброванная кривая: 1→100 уровень суммарно ≈ 1000 часов оптимальной игры
@@ -306,6 +308,7 @@
       this.spinCd = Math.max(0, this.spinCd - dt);
       this.dashCd = Math.max(0, this.dashCd - dt);
       this.charmCd = Math.max(0, this.charmCd - dt);
+      this.spatterCd = Math.max(0, this.spatterCd - dt);
       for (const k in this.potCd) this.potCd[k] = Math.max(0, this.potCd[k] - dt);
       // таймеры боевых эликсиров
       let fxChanged = false;
@@ -442,6 +445,34 @@
           col: 'rgba(200,160,255,.6)',
         });
     }
+    // «Брызги»: веер белых капель из хлыста — дальняя атака
+    trySpatter(game) {
+      if (this.spatterCd > 0) return;
+      if (this.mp < 10) { UI.toast('Маны мало — брызги вышли сухими', ''); AudioSys.sfx('denied'); return; }
+      this.mp -= 10;
+      this.spatterCd = this.spatterCdMax;
+      this.strikeT = 0.18;
+      // автонаведение: ближайшая цель в 9 клетках, иначе направление взгляда
+      const tgt = game.nearestEnemy(this.x, this.y, 9);
+      const base = tgt ? K.angTo(this.x, this.y, tgt.x, tgt.y) : this.facing;
+      for (let i = -1; i <= 1; i++) {
+        const a = base + i * 0.16 + (Math.random() - 0.5) * 0.06;
+        game.projectiles.push(new Projectile(this.x, this.y - 0.35,
+          Math.cos(a) * 6.2, Math.sin(a) * 6.2, 0, '#f4f0ff', 0.14, 0, true, 0.5));
+      }
+      // мозаично-капельный шлейф у бёдер
+      for (let i = 0; i < 5; i++) {
+        const a = base + (Math.random() - 0.5) * 0.7;
+        game.particles.spawn({
+          x: this.x, y: this.y - 0.35,
+          vx: Math.cos(a) * 70, vy: Math.sin(a) * 35 - 20,
+          life: 0.3 + Math.random() * 0.2, size: 2.4,
+          col: Math.random() < 0.5 ? '#f4f0ff' : '#ffd8ec',
+        });
+      }
+      AudioSys.sfx('spatter');
+    }
+
     tryCharm(game) {
       if (this.charmCd > 0) return;
       if (this.mp < 25) { UI.toast('Не хватает маны на комплимент', ''); AudioSys.sfx('denied'); return; }
@@ -910,10 +941,13 @@
 
   // ==================== СНАРЯД ====================
   class Projectile {
-    constructor(x, y, vx, vy, dmg, col, r, slow) {
+    // fromPlayer=true: капли героя — бьют демонесс, а не героя
+    constructor(x, y, vx, vy, dmg, col, r, slow, fromPlayer, mult) {
       this.x = x; this.y = y; this.vx = vx; this.vy = vy;
       this.dmg = dmg; this.col = col; this.r = r || 0.15;
       this.slow = slow || 0;
+      this.fromPlayer = !!fromPlayer;
+      this.mult = mult != null ? mult : 1;
       this.t = 0; this.life = 3.2;
       this.homing = 0;
       this.dead = false;
@@ -934,6 +968,19 @@
       if (Dungeon.isWall(game.level, this.x, this.y)) {
         this.dead = true;
         game.particles.burst(this.x, this.y, 6, this.col, 50);
+        return;
+      }
+      if (this.fromPlayer) {
+        // капли героя: первая задетая демонесса получает урон, капля гаснет
+        for (const e of game.enemies) {
+          if (e.dead || e.spawnT > 0) continue;
+          if (K.dist(this.x, this.y, e.x, e.y) < this.r + e.r) {
+            this.dead = true;
+            game.hitEnemy(e, this.mult, { noCombo: true });
+            game.particles.burst(this.x, this.y - 0.3, 6, '#f4f0ff', 60);
+            break;
+          }
+        }
         return;
       }
       const p = game.player;

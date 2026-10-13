@@ -83,6 +83,7 @@ window.game = null;
         const p = this.player;
         if (e.code === 'KeyJ' || e.code === 'Space') p.tryAttack(this);
         else if (e.code === 'KeyK') p.trySpin(this);
+        else if (e.code === 'KeyB') p.trySpatter(this);
         else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyL') p.tryDash(this);
         else if (e.code === 'KeyC') p.tryCharm(this);
         else if (e.code === 'KeyQ') p.tryPotion(this, 'heal');
