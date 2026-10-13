@@ -142,6 +142,7 @@ window.game = null;
       this.campFocus = null;
       this.camX = K.isoX(p.x, p.y); this.camY = K.isoY(p.x, p.y);
       AudioSys.setMusic('camp');
+      UI.hideAll();          // титул/18+/смерть не должны висеть над сценой
       UI.campMode(true);
       SaveSys.save(this);
     },
