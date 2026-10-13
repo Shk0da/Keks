@@ -60,6 +60,17 @@ window.Dungeon = (function () {
       }
       cur = next;
     }
+    // дилатация пола: каждая щель в одну клетку становится проходом в три
+    // (скала рядом с полом становится полом, 8 направлений)
+    {
+      const dil = new Uint8Array(W * H);
+      for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+        if (!cur[idx(x, y)]) continue;              // уже пол
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+          if (!cur[idx(x + dx, y + dy)]) { dil[idx(x, y)] = 1; dx = 2; dy = 2; break; }
+      }
+      for (let i = 0; i < W * H; i++) if (dil[i]) cur[i] = 0;
+    }
     // рамка — скала: без этого заливка регионов ходит «по краю карты»,
     // склеивая отдельные пещеры, и рамочный проход их потом перерезает
     for (let x = 0; x < W; x++) { cur[idx(x, 0)] = 1; cur[idx(x, H - 1)] = 1; }
