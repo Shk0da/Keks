@@ -16,3 +16,6 @@ site/_*.png
 node_modules/
 __pycache__/
 *.log
+
+# служебные превью тестов (и в бандле)
+android/assets/www/_*.png

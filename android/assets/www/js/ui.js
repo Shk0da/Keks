@@ -611,17 +611,22 @@ window.UI = (function () {
     loadSettingsUI();
     persistSettings();
 
-    const tap = (id, fn) => {
+    // Кнопки меню — обычный click: срабатывают при отпускании пальца,
+    // свайп с кнопки прокручивает список (и отменяет нажатие).
+    const tap = (id, fn) => $(id).addEventListener('click', fn);
+    // Боевые кнопки — мгновенно по касанию (отклик важнее отмены);
+    // preventDefault глушит синтетический click, mousedown — для десктопа.
+    const tapFast = (id, fn) => {
       const el = $(id);
       el.addEventListener('touchstart', e => { e.preventDefault(); fn(); }, { passive: false });
       el.addEventListener('mousedown', e => { e.preventDefault(); fn(); });
     };
 
     // HUD-кнопки
-    tap('btnAtk', () => game.state === 'dungeon' && game.player.tryAttack(game));
-    tap('btnSpin', () => game.state === 'dungeon' && game.player.trySpin(game));
-    tap('btnDash', () => game.state === 'dungeon' && game.player.tryDash(game));
-    tap('btnCharm', () => game.state === 'dungeon' && game.player.tryCharm(game));
+    tapFast('btnAtk', () => game.state === 'dungeon' && game.player.tryAttack(game));
+    tapFast('btnSpin', () => game.state === 'dungeon' && game.player.trySpin(game));
+    tapFast('btnDash', () => game.state === 'dungeon' && game.player.tryDash(game));
+    tapFast('btnCharm', () => game.state === 'dungeon' && game.player.tryCharm(game));
     tap('btnPause', () => game.togglePause());
 
     // титул
