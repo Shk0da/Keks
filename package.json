@@ -1,0 +1,11 @@
+{
+  "name": "keks",
+  "version": "1.0.0",
+  "description": "KEKS: Охотник на Суккубов — изометрический rogue-lite ARPG (18+, комедийная цензура) как офлайн WebView-APK",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node tools/check-www.mjs",
+    "build": "bash tools/build-apk.sh"
+  }
+}

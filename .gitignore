@@ -1,0 +1,18 @@
+# сборочные артефакты
+android/build/
+dist/
+
+# подпись APK — не публикуем
+tools/*.keystore
+tools/keystore.properties
+
+# тяжёлые локальные SDK/AVD (используются от ../239 или скачиваются)
+tools/android-sdk/
+tools/android-avd/
+
+# служебные превью тестов
+site/_*.png
+
+node_modules/
+__pycache__/
+*.log

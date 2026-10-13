@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<title>KEKS: Охотник на Суккубов</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vig"></div>
+
+<!-- ======= HUD (только в подземелье) ======= -->
+<div id="hud" class="hidden">
+  <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
+  <div id="actBtns">
+    <button id="btnAtk"    class="abtn abtn-big">Удар</button>
+    <button id="btnSpin"   class="abtn">Вихрь</button>
+    <button id="btnDash"   class="abtn">Рывок</button>
+    <button id="btnCharm"  class="abtn">Флирт</button>
+  </div>
+  <div id="potionBar"></div>
+  <div id="buffBar"></div>
+  <div id="orbHp" class="orb"><div id="hpFill" class="orb-fill"></div><span id="hpText" class="orb-t"></span></div>
+  <div id="orbMp" class="orb"><div id="mpFill" class="orb-fill"></div><span id="mpText" class="orb-t"></span></div>
+  <div id="topBar">
+    <span id="depthLabel"></span>
+    <span id="goldLabel"></span>
+    <button id="btnPause" aria-label="Пауза">❚❚</button>
+  </div>
+  <div id="xpWrap"><div id="xpFill"></div><span id="lvlLabel"></span></div>
+</div>
+
+<!-- ======= Экраны ======= -->
+<div id="screens">
+
+  <section id="scrAge" class="scr hidden">
+    <div class="panel age-panel">
+      <div class="age-18">18+</div>
+      <h2>Только для взрослых</h2>
+      <p>Игра содержит пошлые шутки, двусмысленные диалоги, флиртующих демонесс
+         и пиксельную цензуру, скрывающую древний артефакт героя.<br>
+         Вам есть 18 лет?</p>
+      <div class="row">
+        <button id="btnAgeOk" class="btn primary">Мне есть 18</button>
+        <button id="btnAgeNo" class="btn">Мне меньше</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="scrTitle" class="scr hidden">
+    <div class="title-wrap">
+      <h1 class="logo">KEKS</h1>
+      <div class="logo-sub">Охотник на&nbsp;Суккубов</div>
+      <div class="menu">
+        <button id="btnContinue" class="btn primary big hidden">Продолжить</button>
+        <button id="btnNew"      class="btn big">Новая игра</button>
+        <button id="btnAbout"    class="btn">Об игре</button>
+      </div>
+      <div class="title-hint">плащ на голое тело · хлыст с цензурой · бесконечные глубины</div>
+    </div>
+  </section>
+
+  <section id="scrAbout" class="scr hidden">
+    <div class="panel">
+      <h2>Об игре</h2>
+      <p><b>KEKS: Охотник на Суккубов</b> — изометрический rogue-lite в духе классических
+         Dungeon crawlers. Кекс, охотник в одном плаще, спускается в бесконечные
+         подземелья, где нечисть флиртует больнее, чем бьёт.</p>
+      <p><b>Управление:</b> левая половина экрана — джойстик, справа — удары,
+         лента внизу — эликсиры. На клавиатуре: WASD — движение, <b>J</b> — удар
+         хлыстом, <b>K</b> — вихрь, <b>Shift</b> — рывок, <b>C</b> — флирт,
+         <b>Q</b> — лечение, <b>1–6</b> — эликсиры, <b>Esc</b> — пауза.</p>
+      <p>Основное оружие Кекса — Хлыст Праотца, зашифрованный древней магией
+         цензуры. Никто не знает, как он выглядит. Все, кто узнал, стесняются рассказать.</p>
+      <p class="dim">18+ · комедийная эротика · пиксельная совесть · без сети и слежки</p>
+      <button id="btnAboutBack" class="btn primary">Назад</button>
+    </div>
+  </section>
+
+  <section id="scrCamp" class="scr hidden">
+    <div class="panel wide">
+      <h2>Лагерь «Последний Взгляд»</h2>
+      <div id="campStats" class="camp-stats"></div>
+      <p class="dim" id="campAdvice"></p>
+      <div class="stat-alloc" id="statAlloc"></div>
+      <div class="menu">
+        <button id="btnDive"    class="btn primary big">В подземелье</button>
+        <button id="btnSkills"  class="btn">Навыки</button>
+        <button id="btnArmory"  class="btn">Оружейная</button>
+        <button id="btnRelics"  class="btn">Реликвии</button>
+        <button id="btnTrader"  class="btn">Торговка</button>
+        <button id="btnSettingsCamp" class="btn">Настройки</button>
+        <button id="btnToTitle" class="btn">В главное меню</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="scrSkills" class="scr hidden">
+    <div class="panel wide">
+      <h2>Навыки <span id="skillPts" class="badge"></span></h2>
+      <div id="skillTree" class="skill-tree"></div>
+      <button id="btnSkillsBack" class="btn primary">Готово</button>
+    </div>
+  </section>
+
+  <section id="scrArmory" class="scr hidden">
+    <div class="panel wide">
+      <h2>Оружейная «Точило Праотца»</h2>
+      <p class="dim" id="armoryGold"></p>
+      <div id="weaponList" class="weapon-list"></div>
+      <div id="weaponDetail" class="weapon-detail"></div>
+      <div id="gemInventory" class="gem-inv"></div>
+      <button id="btnArmoryBack" class="btn primary">Готово</button>
+    </div>
+  </section>
+
+  <section id="scrRelics" class="scr hidden">
+    <div class="panel wide">
+      <h2>Реликвии</h2>
+      <div id="relicSlots" class="relic-slots"></div>
+      <div id="relicList" class="relic-list"></div>
+      <button id="btnRelicsBack" class="btn primary">Готово</button>
+    </div>
+  </section>
+
+  <section id="scrTrader" class="scr hidden">
+    <div class="panel wide">
+      <h2>Мадам Векс — товары</h2>
+      <p class="dim" id="traderQuip"></p>
+      <div id="traderStock" class="trader-stock"></div>
+      <button id="btnTraderBack" class="btn primary">Готово</button>
+    </div>
+  </section>
+
+  <section id="scrSettings" class="scr hidden">
+    <div class="panel">
+      <h2>Настройки</h2>
+      <label class="fld">Громкость эффектов <input type="range" id="volSfx" min="0" max="100" value="80"></label>
+      <label class="fld">Громкость музыки <input type="range" id="volMus" min="0" max="100" value="55"></label>
+      <label class="fld">Джойстик
+        <select id="stickSide">
+          <option value="left">Слева</option>
+          <option value="right">Справа</option>
+        </select>
+      </label>
+      <label class="fld chk"><input type="checkbox" id="chkFps"> Показывать FPS</label>
+      <button id="btnWipe" class="btn danger">Стереть сохранение</button>
+      <button id="btnSettingsBack" class="btn primary">Назад</button>
+    </div>
+  </section>
+
+  <section id="scrDescend" class="scr hidden">
+    <div class="panel">
+      <h2>Этаж зачищен</h2>
+      <p id="descendText"></p>
+      <div class="row">
+        <button id="btnDeeper"  class="btn primary big">Глубже ↓</button>
+        <button id="btnToCamp2" class="btn big">В лагерь</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="scrDead" class="scr hidden">
+    <div class="panel dead-panel">
+      <h2>Ты повержен…</h2>
+      <p class="dead-quips" id="deadQuip"></p>
+      <p id="deadStats"></p>
+      <button id="btnDeadCamp" class="btn primary big">В лагерь (за выкуп)</button>
+    </div>
+  </section>
+
+  <section id="scrPause" class="scr hidden">
+    <div class="panel">
+      <h2>Передышка</h2>
+      <div class="menu">
+        <button id="btnResume" class="btn primary big">Продолжить</button>
+        <button id="btnPauseCamp" class="btn">Сдаться и в лагерь</button>
+        <button id="btnPauseSettings" class="btn">Настройки</button>
+        <button id="btnPauseTitle" class="btn">В главное меню</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Карточка перехода между этажами (диабловское затемнение) -->
+<div id="floorCard" class="hidden">
+  <div class="fc-depth"></div>
+  <div class="fc-name"></div>
+  <div class="fc-quip"></div>
+</div>
+
+<!-- Диалоговая лента (реплики демонесс и героев) -->
+<div id="dlg" class="hidden"><b id="dlgWho"></b><span id="dlgText"></span></div>
+<div id="bossBanner" class="hidden"></div>
+<div id="toasts"></div>
+<div id="fps" class="hidden"></div>
+
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/data.js"></script>
+<script src="js/dungeon.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/skills.js"></script>
+<script src="js/save.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
