@@ -52,16 +52,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 #xpFill{height:100%;width:0%;background:linear-gradient(90deg,#a45ff0,#f08fe0);
   box-shadow:0 0 10px rgba(240,143,224,.8);transition:width .25s}
 
-/* полосы HP/MP (вместо сфер): стек в левом верхнем углу */
+/* полосы HP/MP (вместо сфер): компактный стек в левом верхнем углу, ~15% ширины */
 #vitals{position:absolute;top:calc(10px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));
-  width:min(44vw,400px);display:flex;flex-direction:column;gap:5px;z-index:12}
-.bar{position:relative;height:22px;border:1px solid var(--panel-line);border-radius:7px;
+  width:15vw;max-width:240px;min-width:120px;display:flex;flex-direction:column;gap:4px;z-index:12}
+.bar{position:relative;height:18px;border:1px solid var(--panel-line);border-radius:6px;
   background:rgba(10,5,16,.88);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .bar-fill{position:absolute;left:0;top:0;bottom:0;width:100%;transition:width .2s}
 .hpbar .bar-fill{background:linear-gradient(180deg,#ff8aa8,#c22a52 65%,#8a1636)}
 .mpbar .bar-fill{background:linear-gradient(180deg,#9ec2ff,#3555c2 65%,#1c2f6e)}
 .bar-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000;letter-spacing:.04em}
+  font-size:10.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000;letter-spacing:.02em;
+  white-space:nowrap;overflow:hidden}
 /* низкое HP — полоса тревожно пульсирует */
 .hpbar.low{animation:lowHp 0.9s ease-in-out infinite}
 @keyframes lowHp{0%,100%{box-shadow:0 0 4px rgba(255,60,90,.4)}50%{box-shadow:0 0 14px rgba(255,60,90,.95)}}
@@ -93,8 +94,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 
 /* активные эффекты: под полосками HP/MP слева */
 #buffBar{position:absolute;left:calc(12px + env(safe-area-inset-left));
-  top:calc(66px + env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:6px;
-  max-width:min(44vw,400px);pointer-events:none}
+  top:calc(56px + env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:6px;
+  max-width:min(38vw,340px);pointer-events:none}
 .buffPill{background:rgba(15,8,22,.85);border:1.5px solid var(--bcol,#fff);
   border-radius:10px;padding:3px 9px;font-size:12px;color:var(--ink);
   box-shadow:0 0 10px rgba(0,0,0,.4)}
