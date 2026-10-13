@@ -160,6 +160,7 @@ window.game = null;
         case 'armory': UI.show('armory'); break;
         case 'relics': UI.show('relics'); break;
         case 'board': UI.show('camp'); break;
+        case 'factory': UI.show('factory'); break;
         case 'gate': UI.show('gate'); break;
       }
     },
