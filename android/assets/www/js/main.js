@@ -791,11 +791,15 @@ window.game = null;
           case 'wall': {
             const sx = K.isoX(it.x, it.y), sy = K.isoY(it.x, it.y);
             ctx.globalAlpha = it.v === 2 ? 1 : 0.42;
-            // стена перед героем (глубина больше и накрывает его колонку) —
-            // полупрозрачная, чтобы бег вдоль стены не прятал персонажа
+            // стена перед героем — полупрозрачная: чем ближе к колонке
+            // персонажа, тем прозрачнее (бег вдоль стены не прячет героя)
             if (it.v === 2) {
               const psx = K.isoX(p.x - 0.5, p.y - 0.5), psy = K.isoY(p.x - 0.5, p.y - 0.5) + K.TH / 2;
-              if (Math.abs(sx - psx) < 46 && sy - psy > -26 && sy - psy < 124) ctx.globalAlpha = 0.4;
+              const dxw = Math.abs(sx - psx), dyw = sy - psy;
+              if (dxw < 78 && dyw > -34 && dyw < 150) {
+                const cover = K.clamp(1 - dxw / 78, 0, 1) * K.clamp(1 - Math.abs(dyw - 60) / 95, 0, 1);
+                ctx.globalAlpha = K.lerp(1, 0.35, cover);
+              }
             }
             Sprites.drawWall(ctx, lvl.theme, it.x, it.y, sx, sy);
             ctx.globalAlpha = 1;
