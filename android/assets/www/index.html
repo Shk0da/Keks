@@ -16,6 +16,7 @@
   <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
   <div id="actBtns">
     <button id="btnAtk"    class="abtn abtn-big">Удар</button>
+    <button id="btnInteract" class="abtn abtn-big hidden">Действие</button>
     <button id="btnSpin"   class="abtn">Вихрь</button>
     <button id="btnDash"   class="abtn">Рывок</button>
     <button id="btnCharm"  class="abtn">Флирт</button>
@@ -83,20 +84,11 @@
 
   <section id="scrCamp" class="scr hidden">
     <div class="panel wide">
-      <h2>Лагерь «Последний Взгляд»</h2>
+      <h2>Доска сводки лагеря</h2>
       <div id="campStats" class="camp-stats"></div>
       <p class="dim" id="campAdvice"></p>
-      <div id="campNpcs" class="npc-row"></div>
       <div class="stat-alloc" id="statAlloc"></div>
-      <div class="menu">
-        <button id="btnDive"    class="btn primary big">В подземелье</button>
-        <button id="btnSkills"  class="btn">Навыки</button>
-        <button id="btnArmory"  class="btn">Оружейная</button>
-        <button id="btnRelics"  class="btn">Реликвии</button>
-        <button id="btnTrader"  class="btn">Торговка</button>
-        <button id="btnSettingsCamp" class="btn">Настройки</button>
-        <button id="btnToTitle" class="btn">В главное меню</button>
-      </div>
+      <button id="btnCampBoardBack" class="btn primary">Закрыть</button>
     </div>
   </section>
 
@@ -217,6 +209,7 @@
 <script src="js/skills.js"></script>
 <script src="js/save.js"></script>
 <script src="js/quests.js"></script>
+<script src="js/camp.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 </body>

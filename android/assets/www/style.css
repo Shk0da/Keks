@@ -322,3 +322,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;
   font-family:var(--serif);color:var(--muted);font-size:16px;padding:30px}
 @media (orientation:portrait) and (max-height:520px){#rotateHint{display:flex}}
+
+/* режим лагеря: вместо боевых кнопок — «Действие» */
+#hud.camp-mode #btnAtk, #hud.camp-mode #btnSpin, #hud.camp-mode #btnDash,
+#hud.camp-mode #btnCharm, #hud.camp-mode #potionBar { display: none }
+#hud.camp-mode #btnInteract { display: block }
+#btnInteract{right:26px;bottom:62px;
+  background:radial-gradient(circle at 35% 30%,rgba(120,90,200,.95),rgba(35,20,60,.95))}

@@ -5,6 +5,18 @@ window.UI = (function () {
   const $ = id => document.getElementById(id);
   let game = null;
 
+  // ===================== Режим лагеря =====================
+  function campMode(on) {
+    $('hud').classList.toggle('camp-mode', !!on);
+    if (on) $('hud').classList.remove('hidden');
+  }
+  // возврат из оверлеев в сцену лагеря
+  function campBack() {
+    AudioSys.sfx('uiBack');
+    hideAll();
+    if (window.game.state === 'campScene') campMode(true);
+  }
+
   // ===================== Экраны =====================
   const screens = ['scrAge', 'scrTitle', 'scrAbout', 'scrCamp', 'scrSkills',
     'scrArmory', 'scrRelics', 'scrTrader', 'scrNpc', 'scrSettings', 'scrDescend', 'scrDead', 'scrPause'];
@@ -14,6 +26,7 @@ window.UI = (function () {
     const cap = n => n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
     screens.forEach(s => $(s).classList.toggle('hidden', s !== 'scr' + cap(name)));
     $('hud').classList.toggle('hidden', name != null);
+    if (name == null) campMode(false);   // выход из лагерного режима HUD
     if (name === 'title') onTitle();
     if (name === 'camp') onCamp();
     if (name === 'skills') renderSkills();
@@ -133,7 +146,9 @@ window.UI = (function () {
       ? 'ур. 100 · МАКС'
       : 'ур. ' + p.level + (p.statPts + p.skillPts > 0 ? ' · +' + (p.statPts + p.skillPts) : '');
     $('goldLabel').textContent = '💰 ' + K.fmt(p.gold);
-    $('depthLabel').textContent = game.level
+    $('depthLabel').textContent = game.level && game.level.isCamp
+      ? 'Лагерь «Последний Взгляд»'
+      : game.level
       ? (game.level.isBoss ? 'БOСС · ' : '') + 'глубина ' + game.level.depth +
         ' · угроза ' + DATA.threat(game.level.depth, p.level) +
         (game.level.parTime
@@ -344,7 +359,7 @@ window.UI = (function () {
     show('npc');
   }
 
-  function closeNpc() { AudioSys.sfx('uiBack'); show('camp'); }
+  function closeNpc() { campBack(); }
 
   function acceptNpc(slot) {
     const p = game.player;
@@ -533,7 +548,6 @@ window.UI = (function () {
   // ===================== Лагерь =====================
   function onCamp() {
     const p = game.player;
-    renderNpcs();
     const hrs = (p.playtime / 3600);
     const needDepth = Math.ceil(0.8 * p.level);
     let advice;
@@ -747,11 +761,12 @@ window.UI = (function () {
 
     // Кнопки меню — обычный click: срабатывают при отпускании пальца,
     // свайп с кнопки прокручивает список (и отменяет нажатие).
-    const tap = (id, fn) => $(id).addEventListener('click', fn);
+    const tap = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
     // Боевые кнопки — мгновенно по касанию (отклик важнее отмены);
     // preventDefault глушит синтетический click, mousedown — для десктопа.
     const tapFast = (id, fn) => {
       const el = $(id);
+      if (!el) return;
       el.addEventListener('touchstart', e => { e.preventDefault(); fn(); }, { passive: false });
       el.addEventListener('mousedown', e => { e.preventDefault(); fn(); });
     };
@@ -762,6 +777,8 @@ window.UI = (function () {
     tapFast('btnDash', () => game.state === 'dungeon' && game.player.tryDash(game));
     tapFast('btnCharm', () => game.state === 'dungeon' && game.player.tryCharm(game));
     tap('btnPause', () => game.togglePause());
+    tapFast('btnInteract', () => game.state === 'campScene' && !game.paused && game.interact());
+    tap('btnCampBoardBack', () => UI.campBack());
 
     // титул
     tap('btnNew', () => {
@@ -785,14 +802,14 @@ window.UI = (function () {
     // лагерь
     tap('btnDive', () => game.enterFloor(game.player.depth));
     tap('btnSkills', () => show('skills'));
-    tap('btnSkillsBack', () => { SaveSys.save(game); show('camp'); });
+    tap('btnSkillsBack', () => { SaveSys.save(game); campBack(); });
     tap('btnArmory', () => show('armory'));
-    tap('btnArmoryBack', () => { SaveSys.save(game); show('camp'); });
+    tap('btnArmoryBack', () => { SaveSys.save(game); campBack(); });
     tap('btnRelics', () => show('relics'));
-    tap('btnRelicsBack', () => { SaveSys.save(game); show('camp'); });
+    tap('btnRelicsBack', () => { SaveSys.save(game); campBack(); });
     tap('btnTrader', () => show('trader'));
-    tap('btnTraderBack', () => { SaveSys.save(game); show('camp'); });
-    tap('btnSettingsCamp', () => { settingsFrom = 'camp'; show('settings'); });
+    tap('btnTraderBack', () => { SaveSys.save(game); campBack(); });
+    tap('btnSettingsCamp', () => { settingsFrom = 'campScene'; show('settings'); });
     tap('btnToTitle', () => { SaveSys.save(game); game.toTitle(); });
 
     // спуск
@@ -807,7 +824,7 @@ window.UI = (function () {
     tap('btnPauseCamp', () => { game.surrender(); });
     tap('btnPauseSettings', () => { settingsFrom = 'pause'; show('settings'); });
     tap('btnPauseTitle', () => { SaveSys.save(game); game.toTitle(); });
-    tap('btnSettingsBack', () => { show(settingsFrom); });
+    tap('btnSettingsBack', () => { if (settingsFrom === 'campScene') campBack(); else show(settingsFrom); });
     tap('btnWipe', () => {
       if (confirm('Стереть сохранение безвозвратно?')) {
         SaveSys.wipe();
@@ -836,7 +853,7 @@ window.UI = (function () {
 
   return {
     init, show, hideAll, updateHUD, goldPing, toast, dialogue, bossBannerShow, floorCard,
-    openNpc, closeNpc, acceptNpc, turnInNpc, openTraderFromNpc,
+    openNpc, closeNpc, acceptNpc, turnInNpc, openTraderFromNpc, campMode, campBack,
     move, get settings() { return settings; },
   };
 })();

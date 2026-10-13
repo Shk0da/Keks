@@ -71,6 +71,11 @@ window.game = null;
         if (e.repeat) return;
         this.keys[e.code] = true;
         AudioSys.ensure();
+        if (this.state === 'campScene' && !this.paused) {
+          if (e.code === 'KeyJ' || e.code === 'Space' || e.code === 'KeyE') this.interact();
+          else if (e.code === 'Escape') this.togglePause();
+          return;
+        }
         if (this.state !== 'dungeon' || this.paused) {
           if (e.code === 'Escape' && this.paused) this.togglePause();
           return;
@@ -122,20 +127,46 @@ window.game = null;
       this.toCamp();
     },
     toCamp() {
-      this.state = 'camp';
+      // лагерь — живая комната: уровень без врагов, NPC и постройки на местах
+      this.state = 'campScene';
       this.paused = false;
-      this.level = null;
-      UI.show('camp');
+      this.level = CampScene.build();
+      Sprites.prepare(this.level.theme);
+      const p = this.player;
+      p.x = this.level.entry.x; p.y = this.level.entry.y;
+      p.moving = false; p.strikeT = 0; p.spinT = 0; p.dashT = 0; p.drinkT = 0;
+      p.hp = Math.max(p.hp, p.maxHp * 0.35);          // лагерь чуть подлечивает
+      this.enemies = []; this.projectiles = []; this.pickups = [];
+      this.particles.list.length = 0;
+      this.exitPortal = null; this.bossDead = false;
+      this.campFocus = null;
+      this.camX = K.isoX(p.x, p.y); this.camY = K.isoY(p.x, p.y);
       AudioSys.setMusic('camp');
+      UI.campMode(true);
       SaveSys.save(this);
     },
+    // взаимодействие в лагере: NPC/постройки/врата
+    interact() {
+      const f = this.campFocus;
+      if (!f) { UI.toast('Подойди ближе к жителю или постройке', ''); return; }
+      AudioSys.sfx('ui');
+      switch (f.kind) {
+        case 'npc': UI.openNpc(f.id); break;
+        case 'skills': UI.show('skills'); break;
+        case 'armory': UI.show('armory'); break;
+        case 'relics': UI.show('relics'); break;
+        case 'board': UI.show('camp'); break;
+        case 'gate': this.enterFloor(this.player.depth); break;
+      }
+    },
     togglePause() {
-      if (this.state !== 'dungeon') return;
+      if (this.state !== 'dungeon' && this.state !== 'campScene') return;
       this.paused = !this.paused;
       UI.show(this.paused ? 'pause' : null);
       if (!this.paused) SaveSys.save(this);
     },
     surrender() {
+      if (this.state === 'campScene') { this.togglePause(); return; }  // в лагере «сдаться» = продолжить
       // сдаться в паузе: как смерть, без смертной реплики
       this.player.gold = Math.floor(this.player.gold * 0.85);
       this.paused = false;
@@ -542,6 +573,14 @@ window.game = null;
       if (this.hitstopT > 0) { this.hitstopT -= dt; dt *= 0.12; }
 
       if (this.state === 'dungeon' && !this.paused) this.updateDungeon(dt);
+      if (this.state === 'campScene' && !this.paused) {
+        CampScene.update(dt, this);
+        this.particles.update(dt);
+        const p = this.player;
+        this.camX = K.lerp(this.camX, K.isoX(p.x, p.y), Math.min(1, dt * 7));
+        this.camY = K.lerp(this.camY, K.isoY(p.x, p.y), Math.min(1, dt * 7));
+        UI.updateHUD(p);
+      }
       this.updateAlways(dt, t);
 
       this.render(t);
@@ -721,7 +760,7 @@ window.game = null;
     render(t) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cw, ch);
-      if (this.state === 'dungeon' || this.state === 'descend' || this.state === 'dead') {
+      if (this.state === 'dungeon' || this.state === 'descend' || this.state === 'dead' || this.state === 'campScene') {
         this.renderWorld(t);
       } else {
         this.renderMenu(t);
@@ -807,6 +846,7 @@ window.game = null;
           }
           case 'torch': {
             const o = it.o;
+            if (o.campfire) break;   // костёр рисует CampScene
             const sx = K.isoX(o.x - 0.5, o.y - 0.5), sy = K.isoY(o.x - 0.5, o.y - 0.5) + K.TH / 2;
             Sprites.drawTorch(ctx, sx, sy, t);
             break;
@@ -1004,6 +1044,13 @@ window.game = null;
       // --- частицы и числа урона ---
       this.particles.draw(ctx, (wx, wy) => [K.isoX(wx, wy), K.isoY(wx, wy)]);
       this.dmgNums.draw(ctx, (wx, wy) => [K.isoX(wx, wy), K.isoY(wx, wy)]);
+
+      // --- лагерь: постройки и NPC (в мировых координатах, до света) ---
+      if (lvl.isCamp) {
+        CampScene.drawStructures(ctx, t);
+        CampScene.drawNpcs(ctx, t, this);
+        if (!this.paused) CampScene.drawFocus(ctx, t, this);
+      }
 
       // --- облачка реплик ---
       ctx.font = '12px system-ui, sans-serif';
