@@ -108,15 +108,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   color:var(--ink);font-family:var(--serif);font-size:13px;letter-spacing:.03em;
   box-shadow:0 4px 14px rgba(0,0,0,.5),inset 0 0 12px rgba(255,150,200,.12)}
 .abtn:active,.abtn.press{transform:scale(.93);filter:brightness(1.35)}
-.abtn-big{width:96px;height:96px;right:26px;bottom:40px;font-size:15px;
+.abtn-big{width:84px;height:84px;right:20px;bottom:46px;font-size:28px;
   background:radial-gradient(circle at 35% 30%,rgba(190,60,120,.95),rgba(70,15,50,.95))}
-.abtn{width:66px;height:66px}
-/* радиальная дуга вокруг «Удара» (центр 74,88): 12ч, 11ч, 9:30, 7:30 */
-#btnSpin{right:118px;bottom:108px}
-#btnSpatter{right:45px;bottom:152px;width:60px;height:60px;font-size:12px;
+.abtn:not(.abtn-big){width:50px;height:50px;font-size:21px}
+/* компактная дуга иконок вокруг «Удара» (центр 68,84): 12ч, 11ч, 9:30, 7:30 */
+#btnSpin{right:106px;bottom:126px}
+#btnSpatter{right:37px;bottom:146px;font-size:20px;
   background:radial-gradient(circle at 35% 30%,rgba(220,225,255,.95),rgba(60,70,110,.95))}
-#btnDash{right:132px;bottom:30px}
-#btnCharm{right:118px;bottom:-4px}
+#btnDash{right:134px;bottom:52px}
+#btnCharm{right:106px;bottom:0}
 .abtn.cd{filter:grayscale(.8) brightness(.6)}
 .abtn .cdRing{position:absolute;inset:-4px;border-radius:50%;
   background:conic-gradient(rgba(0,0,0,.72) var(--p,0%),transparent 0)}
