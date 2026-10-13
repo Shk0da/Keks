@@ -31,6 +31,16 @@ window.CampScene = (function () {
     fire:  { x: 9.5,  y: 7.5 },   // костёр
   };
 
+  // коллайдеры декора (x, y, r)
+  const BLOCKERS = [
+    { x: SPOTS.fire.x, y: SPOTS.fire.y, r: 0.62 },
+    { x: 14.6, y: 11.4, r: 0.95 },
+    { x: 16.2, y: 8.6, r: 0.5 },
+    { x: 2.5, y: 2.6, r: 0.5 }, { x: 3.4, y: 2.2, r: 0.45 },
+    { x: 16.6, y: 12.4, r: 0.5 },
+    { x: 8.2, y: 9.4, r: 0.35 }, { x: 10.8, y: 9.3, r: 0.35 },
+  ];
+
   function build() {
     const tiles = new Uint8Array(W * H);
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) tiles[y * W + x] = 1;
@@ -109,13 +119,16 @@ window.CampScene = (function () {
       p.drinkT = Math.max(0, p.drinkT - dt);
       p.strikeT = Math.max(0, p.strikeT - dt);
     }
-    // стенки и структуры
+    // стенки, структуры и декор
     game.collideCircle(p);
-    for (const s of structures()) {
-      const d = K.dist(p.x, p.y, s.x === 'gate' ? SPOTS.gate.x : SPOTS[s.id].x, SPOTS[s.id].y);
-      if (s.id !== 'gate' && d < 0.75 && d > 0.001) {
-        p.x += (p.x - SPOTS[s.id].x) / d * (0.75 - d);
-        p.y += (p.y - SPOTS[s.id].y) / d * (0.75 - d);
+    const solids = structures().filter(st => st.id !== 'gate')
+      .map(st => ({ x: SPOTS[st.id].x, y: SPOTS[st.id].y, r: 0.75 }))
+      .concat(BLOCKERS);
+    for (const so of solids) {
+      const d = K.dist(p.x, p.y, so.x, so.y);
+      if (d < so.r && d > 0.001) {
+        p.x += (p.x - so.x) / d * (so.r - d);
+        p.y += (p.y - so.y) / d * (so.r - d);
       }
     }
     // ближайшая интерактивная точка
@@ -135,6 +148,164 @@ window.CampScene = (function () {
       });
     }
   }
+
+  // декор комнаты: ковёр, гобелены, лавка Векс, стойка оружия, свечи,
+  // мозаика, бочки, табуреты — рисуется до построек и NPC
+  function drawDecor(g, t) {
+    const S2 = (x, y) => [K.isoX(x - 0.5, y - 0.5), K.isoY(x - 0.5, y - 0.5) + K.TH / 2];
+
+    // ковёр у костра: двухцветный iso-эллипс с каймой и ромбами
+    {
+      const [fx, fy] = S2(SPOTS.fire.x, SPOTS.fire.y);
+      g.fillStyle = '#6a2f3a';
+      g.beginPath(); g.ellipse(fx, fy + 2, 96, 48, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#84404e';
+      g.beginPath(); g.ellipse(fx, fy + 2, 78, 38, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#c8956a'; g.lineWidth = 2; g.setLineDash([6, 5]);
+      g.beginPath(); g.ellipse(fx, fy + 2, 86, 43, 0, 0, Math.PI * 2); g.stroke();
+      g.setLineDash([]);
+      g.strokeStyle = 'rgba(200,149,106,.55)'; g.lineWidth = 1.2;
+      for (let i = -2; i <= 2; i++) {
+        g.beginPath();
+        g.moveTo(fx + i * 26, fy - 8);
+        g.lineTo(fx + i * 26 + 12, fy + 2);
+        g.lineTo(fx + i * 26, fy + 12);
+        g.lineTo(fx + i * 26 - 12, fy + 2);
+        g.closePath(); g.stroke();
+      }
+    }
+
+    // гобелены на северной стене
+    for (const bx of [5, 13]) {
+      const [wx, wy] = S2(bx, 0.5);
+      const top = wy - K.WH;
+      g.fillStyle = bx === 5 ? '#5c1f3d' : '#332070';
+      g.beginPath();
+      g.moveTo(wx - 12, top + 6); g.lineTo(wx + 12, top + 6);
+      g.lineTo(wx + 12, top + 30); g.quadraticCurveTo(wx + 6, top + 38, wx, top + 32);
+      g.quadraticCurveTo(wx - 6, top + 38, wx - 12, top + 30);
+      g.closePath(); g.fill();
+      g.strokeStyle = '#c8a030'; g.lineWidth = 1.4; g.stroke();
+      if (bx === 5) Sprites.drawHeart(g, wx, top + 18, 5, '#ff7ab8');
+      else {
+        g.fillStyle = '#c86aff';
+        for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++)
+          g.fillRect(wx + i * 4 - 1.6, top + 18 + j * 4 - 1.6, 3.2, 3.2);
+      }
+    }
+
+    // лавка Векс: прилавок, навес в полоску, товар
+    {
+      const [sx, sy] = S2(SPOTS.veks.x, SPOTS.veks.y + 0.9);
+      Sprites.shadowE(g, sx, sy + 2, 30, 12, .4);
+      g.fillStyle = '#6a4a2a';
+      g.beginPath();
+      g.moveTo(sx - 26, sy - 8); g.lineTo(sx, sy + 4); g.lineTo(sx + 26, sy - 8);
+      g.lineTo(sx + 26, sy - 20); g.lineTo(sx, sy - 8); g.lineTo(sx - 26, sy - 20);
+      g.closePath(); g.fill();
+      g.fillStyle = '#7c5a34';
+      g.beginPath();
+      g.moveTo(sx - 26, sy - 20); g.lineTo(sx, sy - 8); g.lineTo(sx + 26, sy - 20); g.lineTo(sx, sy - 32);
+      g.closePath(); g.fill();
+      for (let i = 0; i < 3; i++) {
+        const bx = sx - 12 + i * 12, by = sy - 24 - (i === 1 ? 3 : 0);
+        g.fillStyle = ['#58d890', '#ff5a6e', '#5a8aff'][i];
+        g.beginPath(); g.ellipse(bx, by, 2.6, 3.6, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#2a3a2a'; g.fillRect(bx - 1, by - 6, 2, 3);
+      }
+      g.strokeStyle = '#5a4028'; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(sx - 26, sy - 20); g.lineTo(sx - 26, sy - 54); g.stroke();
+      g.beginPath(); g.moveTo(sx + 26, sy - 20); g.lineTo(sx + 26, sy - 54); g.stroke();
+      for (let i = 0; i < 5; i++) {
+        g.fillStyle = i % 2 ? '#f0e0c0' : '#c2497f';
+        const x0 = sx - 30 + i * 12;
+        g.beginPath();
+        g.moveTo(x0, sy - 56); g.lineTo(x0 + 12, sy - 56);
+        g.lineTo(x0 + 14, sy - 44); g.lineTo(x0 + 2, sy - 44);
+        g.closePath(); g.fill();
+      }
+      g.fillStyle = '#f0c060';
+      g.beginPath(); g.ellipse(sx + 16, sy - 22, 3, 2, 0, 0, Math.PI * 2); g.fill();
+    }
+
+    // стойка оружия у точила
+    {
+      const [sx, sy] = S2(16.2, 8.6);
+      Sprites.shadowE(g, sx, sy + 2, 14, 6, .35);
+      g.strokeStyle = '#5a4028'; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx, sy - 34); g.stroke();
+      g.strokeStyle = '#7a6a4a'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(sx - 10, sy - 30); g.lineTo(sx + 10, sy - 30); g.stroke();
+      for (const [cx2, col] of [[-5, '#a06a3a'], [6, '#c88aa0']]) {
+        g.strokeStyle = col; g.lineWidth = 2.4;
+        g.beginPath(); g.ellipse(sx + cx2, sy - 22, 6, 5, 0.3, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.ellipse(sx + cx2, sy - 22, 3.4, 2.8, 0.3, 0, Math.PI * 2); g.stroke();
+      }
+    }
+
+    // свечи вокруг Праотца
+    {
+      const [sx, sy] = S2(SPOTS.prao.x, SPOTS.prao.y);
+      for (let i = 0; i < 4; i++) {
+        const a = i / 4 * Math.PI * 2 + 0.6;
+        const cx2 = sx + Math.cos(a) * 26, cy2 = sy + Math.sin(a) * 12;
+        g.fillStyle = '#e8e0c8';
+        g.fillRect(cx2 - 1.5, cy2 - 8, 3, 8);
+        const fl = 0.7 + Math.sin(t * 10 + i * 2) * 0.3;
+        g.fillStyle = K.rgba('#ffd890', fl);
+        g.beginPath(); g.ellipse(cx2, cy2 - 11, 1.6, 3 * fl, 0, 0, Math.PI * 2); g.fill();
+      }
+    }
+
+    // мозаика под Мозаикой: пульсирующий пиксельный круг
+    {
+      const [sx, sy] = S2(SPOTS.moza.x, SPOTS.moza.y);
+      const pul = 0.45 + 0.25 * Math.sin(t * 2.2);
+      g.strokeStyle = K.rgba('#c86aff', pul); g.lineWidth = 1.6;
+      g.beginPath(); g.ellipse(sx, sy + 2, 40, 20, 0, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = K.rgba('#c86aff', pul * 0.8);
+      for (let i = 0; i < 8; i++) {
+        const a = i / 8 * Math.PI * 2 + t * 0.25;
+        g.fillRect(sx + Math.cos(a) * 32 - 2, sy + 2 + Math.sin(a) * 15 - 2, 4, 4);
+      }
+    }
+
+    // бочки и ящик
+    const barrel = (x, y) => {
+      const [sx, sy] = S2(x, y);
+      Sprites.shadowE(g, sx, sy + 2, 12, 5, .4);
+      g.fillStyle = '#6a4a2a';
+      g.fillRect(sx - 8, sy - 20, 16, 16);
+      g.strokeStyle = '#3a2a18'; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(sx - 8, sy - 9); g.lineTo(sx + 8, sy - 9); g.stroke();
+      g.beginPath(); g.moveTo(sx - 8, sy - 15); g.lineTo(sx + 8, sy - 15); g.stroke();
+      g.fillStyle = '#7c5a34';
+      g.beginPath(); g.ellipse(sx, sy - 20, 8, 3.4, 0, 0, Math.PI * 2); g.fill();
+    };
+    barrel(2.5, 2.6); barrel(3.4, 2.2);
+    {
+      const [sx, sy] = S2(16.6, 12.4);
+      Sprites.shadowE(g, sx, sy + 2, 12, 5, .4);
+      g.fillStyle = '#7a5a30';
+      g.fillRect(sx - 9, sy - 16, 18, 16);
+      g.strokeStyle = '#4a3618'; g.lineWidth = 1.4;
+      g.strokeRect(sx - 9, sy - 16, 18, 16);
+      g.beginPath(); g.moveTo(sx - 9, sy - 16); g.lineTo(sx + 9, sy); g.stroke();
+    }
+
+    // табуреты-чурки у костра
+    for (const [x, y] of [[8.2, 9.4], [10.8, 9.3]]) {
+      const [sx, sy] = S2(x, y);
+      Sprites.shadowE(g, sx, sy + 2, 9, 4, .35);
+      g.fillStyle = '#8a6a40';
+      g.fillRect(sx - 7, sy - 10, 14, 10);
+      g.fillStyle = '#9c7a4c';
+      g.beginPath(); g.ellipse(sx, sy - 10, 7, 3, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#5a4028'; g.lineWidth = 1;
+      g.beginPath(); g.ellipse(sx, sy - 10, 7, 3, 0, 0, Math.PI * 2); g.stroke();
+    }
+  }
+
 
   function drawStructures(g, t) {
     // алтарь навыков: обелиск с парящей книгой
@@ -234,6 +405,26 @@ window.CampScene = (function () {
       grd.addColorStop(1, 'rgba(255,90,30,0)');
       g.fillStyle = grd;
       g.beginPath(); g.ellipse(sx, sy - 12, 10 * fl, 17 * fl, 0, 0, Math.PI * 2); g.fill();
+      // чугунок на треноге: ужин лагеря
+      g.strokeStyle = '#4a3a28'; g.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        const a = i / 3 * Math.PI * 2 + 0.4;
+        g.beginPath();
+        g.moveTo(sx + Math.cos(a) * 12, sy - 2 + Math.sin(a) * 5);
+        g.lineTo(sx + Math.cos(a) * 4, sy - 20);
+        g.stroke();
+      }
+      g.fillStyle = '#3c3c44';
+      g.beginPath(); g.ellipse(sx, sy - 20, 9, 5, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#585864';
+      g.beginPath(); g.ellipse(sx, sy - 22, 7, 3.4, 0, 0, Math.PI * 2); g.fill();
+      if (Math.sin(t * 2 + 1) > 0.2) {
+        g.strokeStyle = 'rgba(240,240,255,.35)'; g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(sx, sy - 26);
+        g.quadraticCurveTo(sx + 4, sy - 32 + Math.sin(t * 3) * 2, sx, sy - 38);
+        g.stroke();
+      }
     }
   }
 
@@ -295,5 +486,5 @@ window.CampScene = (function () {
     g.textAlign = 'left';
   }
 
-  return { build, update, drawStructures, drawNpcs, drawFocus, SPOTS, THEME };
+  return { build, update, drawDecor, drawStructures, drawNpcs, drawFocus, SPOTS, THEME };
 })();

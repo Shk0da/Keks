@@ -1048,6 +1048,7 @@ window.game = null;
 
       // --- лагерь: постройки и NPC (в мировых координатах, до света) ---
       if (lvl.isCamp) {
+        CampScene.drawDecor(ctx, t);
         CampScene.drawStructures(ctx, t);
         CampScene.drawNpcs(ctx, t, this);
         if (!this.paused) CampScene.drawFocus(ctx, t, this);
