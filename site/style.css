@@ -355,3 +355,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 #noAdsBanner.show{transform:translate(-50%,0)}
 #noAdsBanner b{display:block;font-family:var(--serif);color:#d8ffe8;font-size:15px;letter-spacing:.04em}
 #noAdsBanner span{font-size:11.5px;color:#a8d8b8}
+
+/* быстрый доступ к оружейной в подземелье (кнопка-хлыст) */
+#btnArmoryQuick{position:absolute;right:calc(14px + env(safe-area-inset-right));
+  top:calc(64px + env(safe-area-inset-top));width:56px;height:56px;font-size:22px;z-index:12}
+#hud.camp-mode #btnArmoryQuick{display:none}

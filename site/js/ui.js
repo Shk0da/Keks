@@ -161,6 +161,12 @@ window.UI = (function () {
               (p.playtime - (game.level.startTime || 0)))) + 'с'
           : '')
       : '';
+    // кнопка оружейной в цвете текущего хлыста
+    const aq = $('btnArmoryQuick');
+    if (aq) {
+      aq.style.borderColor = p.weapon.color;
+      aq.style.boxShadow = '0 0 12px ' + K.rgba(p.weapon.color, 0.45);
+    }
     // зелья: счётчики и кулдауны
     DATA.POTIONS.forEach(pt => {
       const btn = $('pbtn_' + pt.id), cnt = $('pcnt_' + pt.id);
@@ -393,6 +399,17 @@ window.UI = (function () {
 
   function openTraderFromNpc() { show('trader'); }
 
+
+  // ===================== Оружейная из подземелья =====================
+  function openArmoryQuick() {
+    if (game.state === 'dungeon' && !game.paused) game.paused = true;  // бой на паузу
+    show('armory');
+    AudioSys.sfx('ui');
+  }
+  function armoryBack() {
+    if (game.state === 'dungeon') { game.paused = false; show(null); }
+    else campBack();
+  }
 
   // ===================== Врата и фабрика =====================
   function renderGate() {
@@ -867,7 +884,8 @@ window.UI = (function () {
     tap('btnSkills', () => show('skills'));
     tap('btnSkillsBack', () => { SaveSys.save(game); campBack(); });
     tap('btnArmory', () => show('armory'));
-    tap('btnArmoryBack', () => { SaveSys.save(game); campBack(); });
+    tap('btnArmoryQuick', () => UI.openArmoryQuick());
+    tap('btnArmoryBack', () => { SaveSys.save(game); UI.armoryBack(); });
     tap('btnRelics', () => show('relics'));
     tap('btnRelicsBack', () => { SaveSys.save(game); campBack(); });
     tap('btnTrader', () => show('trader'));
@@ -917,6 +935,7 @@ window.UI = (function () {
   return {
     init, show, hideAll, updateHUD, goldPing, toast, dialogue, bossBannerShow, floorCard,
     openNpc, closeNpc, acceptNpc, turnInNpc, openTraderFromNpc, campMode, campBack,
+    openArmoryQuick, armoryBack,
     veksAdPotion() {
       const p = game.player;
       if ((p._adPotionAt || -1e9) > p.playtime - 180) { toast('Векс устала от рекламы — приходи позже', ''); return; }

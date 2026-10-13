@@ -86,6 +86,7 @@ window.game = null;
         else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyL') p.tryDash(this);
         else if (e.code === 'KeyC') p.tryCharm(this);
         else if (e.code === 'KeyQ') p.tryPotion(this, 'heal');
+        else if (e.code === 'KeyI') UI.openArmoryQuick();
         else if (/^Digit[1-6]$/.test(e.code)) {
           const pt = DATA.POTIONS[+e.code.slice(5) - 1];
           if (pt) p.tryPotion(this, pt.id);
