@@ -327,9 +327,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 
 /* режим лагеря: вместо боевых кнопок — «Действие» */
 #hud.camp-mode #btnAtk, #hud.camp-mode #btnSpin, #hud.camp-mode #btnDash,
-#hud.camp-mode #btnCharm, #hud.camp-mode #potionBar { display: none }
+#hud.camp-mode #btnCharm, #hud.camp-mode #btnSpatter, #hud.camp-mode #btnArmoryQuick,
+#hud.camp-mode #potionBar { display: none }
 #hud.camp-mode #btnInteract { display: block }
-#btnInteract{right:26px;bottom:62px;
+#btnInteract{right:26px;bottom:62px;font-size:12.5px;letter-spacing:0;line-height:1.15;
   background:radial-gradient(circle at 35% 30%,rgba(120,90,200,.95),rgba(35,20,60,.95))}
 
 /* демо-оверлей рекламы (rewarded / interstitial) */
