@@ -108,6 +108,9 @@ window.CampScene = (function () {
 
   function update(dt, game) {
     const p = game.player;
+    // в лагере время лечит: мана и здоровье восстанавливаются
+    p.mp = Math.min(p.maxMp, p.mp + p.maxMp * 0.08 * dt);
+    p.hp = Math.min(p.maxHp, (p.hp || p.maxHp) + p.maxHp * 0.012 * dt);
     // движение игрока по лагерю (без боевых механик)
     const mv = game.moveInput();
     const len = Math.hypot(mv.x, mv.y);

@@ -234,6 +234,8 @@
       return Math.round(hp);
     }
     get maxMp() { return 50 + (this.level - 1) * 4 + this.stats.cha * 2; }
+    // восстановление маны: растёт с уровнем и харизмой
+    get mpRegen() { return 2.4 + this.level * 0.12 + this.stats.cha * 0.06; }
     get baseDmg() {
       let d = 8 + (this.stats.str - 5) * 0.9 + (this.level - 1) * 1.2 + this.perm.dmg;
       d *= 1 + this.relicBonus('dmgPct') / 100;
@@ -332,7 +334,7 @@
         if (this.streakT <= 0) this.streak = 0;
       }
       if (this.comboT <= 0) this.combo = 0;
-      this.mp = K.clamp((this.mp != null ? this.mp : this.maxMp) + dt * 1.6, 0, this.maxMp);
+      this.mp = K.clamp((this.mp != null ? this.mp : this.maxMp) + dt * this.mpRegen, 0, this.maxMp);
 
       // рывок
       if (this.dashT > 0) {
