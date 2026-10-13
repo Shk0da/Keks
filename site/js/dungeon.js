@@ -107,6 +107,74 @@ window.Dungeon = (function () {
     return { tiles, rooms };
   }
 
+  // ---------- планировка: катакомбы (узкий лабиринт + кельи) ----------
+  // Ходы шириной в один тайл (DFS-лабиринт на нечётной сетке), ~12% стен
+  // снесено в петли — меньше ходьбы назад; поверх — 4–6 кельи-камер,
+  // тупики становятся нишами (там встают саркофаги). Всё связно по построению.
+  function genCatacombs(rng) {
+    const tiles = new Uint8Array(W * H);
+    const CW = (W - 1) >> 1, CH = (H - 1) >> 1;      // 27×27 клеток
+    const visited = new Uint8Array(CW * CH);
+    const cell = (cx, cy) => [cx * 2 + 1, cy * 2 + 1];
+    const scx = 1 + Math.floor(rng() * CW), scy = 1 + Math.floor(rng() * CH);
+    visited[scy * CW + scx] = 1;
+    tiles[idx(...cell(scx, scy))] = 1;
+    const stack = [[scx, scy]];
+    const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (stack.length) {
+      const [cx, cy] = stack[stack.length - 1];
+      const dirs = DIRS.slice();
+      for (let i = dirs.length - 1; i > 0; i--) {   // перемешать
+        const j = Math.floor(rng() * (i + 1));
+        [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+      }
+      let moved = false;
+      for (const [dx, dy] of dirs) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= CW || ny >= CH || visited[ny * CW + nx]) continue;
+        visited[ny * CW + nx] = 1;
+        const [px, py] = cell(cx, cy), [qx, qy] = cell(nx, ny);
+        tiles[idx(qx, qy)] = 1;
+        tiles[idx((px + qx) / 2, (py + qy) / 2)] = 1;  // проём между клетками
+        stack.push([nx, ny]);
+        moved = true;
+        break;
+      }
+      if (!moved) stack.pop();
+    }
+    // петли: сносим часть стен, чтобы лабиринт не был деревом
+    for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
+      if (cx + 1 < CW && rng() < 0.12) tiles[idx(cx * 2 + 2, cy * 2 + 1)] = 1;
+      if (cy + 1 < CH && rng() < 0.12) tiles[idx(cx * 2 + 1, cy * 2 + 2)] = 1;
+    }
+    // кельи-камеры поверх лабиринта
+    const rooms = [];
+    const nCh = 4 + Math.floor(rng() * 3);
+    for (let i = 0; i < nCh; i++) {
+      const w = 5 + Math.floor(rng() * 4), h = 5 + Math.floor(rng() * 4);
+      const x = 1 + 2 * Math.floor(rng() * Math.max(1, (W - w - 2) / 2));
+      const y = 1 + 2 * Math.floor(rng() * Math.max(1, (H - h - 2) / 2));
+      for (let j = y; j < y + h && j < H - 1; j++)
+        for (let ii = x; ii < x + w && ii < W - 1; ii++) tiles[idx(ii, j)] = 1;
+      rooms.push({ x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) });
+    }
+    // ниши и развилки — маркеры для саркофагов/спавнов
+    let extra = 0;
+    for (let cy = 0; cy < CH && extra < 14; cy++) for (let cx = 0; cx < CW && extra < 14; cx++) {
+      const [px, py] = cell(cx, cy);
+      let open = 0;
+      for (const [dx, dy] of DIRS) if (tiles[idx(px + dx, py + dy)] === 1) open++;
+      if (open >= 3 && rng() < 0.2) {                       // развилка
+        rooms.push({ x: px - 1, y: py - 1, w: 3, h: 3, cx: px, cy: py, cave: true });
+        extra++;
+      } else if (open === 1 && rng() < 0.3) {               // ниша-тупик
+        rooms.push({ x: px - 1, y: py - 1, w: 3, h: 3, cx: px, cy: py, cave: true, niche: true });
+        extra++;
+      }
+    }
+    return { tiles, rooms };
+  }
+
   // ---------- планировка: крестовый собор (симметрия) ----------
   function genCross(rng) {
     const tiles = new Uint8Array(W * H);
@@ -175,6 +243,7 @@ window.Dungeon = (function () {
 
     let plan;
     if (isBoss) plan = genArena(rng);
+    else if (theme.id === 'crypt' && rng() < 0.6) plan = genCatacombs(rng);  // катакомбы: лабиринт или комнаты
     else if (theme.gen === 'cave') plan = genCave(rng);
     else if (theme.gen === 'cross') plan = genCross(rng);
     else plan = genRooms(rng);
