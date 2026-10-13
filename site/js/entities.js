@@ -171,6 +171,10 @@
       this.lastPotionCol = '#58d890';
       this.streak = 0; this.streakT = 0;   // «Азарт»: цепочка убийств
       this.dashId = 0;                     // метка рывка для урона насквозь
+      this.adTickets = save.adTickets || 0;      // билеты пропуска рекламы
+      this.adXpT = 0;                            // ×2 опыт от ролика, сек
+      this.trophies = save.trophies || 0;        // «трофеи» для фабрики
+      this.factory = save.factory || { imps: 0, acc: 0, lastTs: Date.now() };
     }
 
     // ---------- производные ----------
@@ -318,6 +322,7 @@
       this.strikeT = Math.max(0, (this.strikeT || 0) - dt);
       this.drinkT = Math.max(0, this.drinkT - dt);
       this.comboT = Math.max(0, this.comboT - dt);
+      this.adXpT = Math.max(0, this.adXpT - dt);
       // «Азарт»: окно цепочки убийств (6 сек между фрагами)
       if (this.streakT > 0) {
         this.streakT -= dt;
@@ -458,6 +463,7 @@
         }
       }
       let xp = v * mult * (1 + this.relicBonus('xpPct') / 100);
+      if (this.adXpT > 0) xp *= 2;   // благословение за ролик
       this.xp += Math.round(xp);
       while (this.xp >= this.xpNext && this.level < DATA.MAX_LEVEL) {
         this.xp -= this.xpNext;
@@ -504,6 +510,7 @@
         perm: this.perm, bought: this.bought, depth: this.depth,
         bestDepth: this.bestDepth, kills: this.kills, playtime: this.playtime,
         quests: this.quests || { main: null, side: null, prao: null, done: {}, unlocked: {} },
+        adTickets: this.adTickets, trophies: this.trophies, factory: this.factory,
         buffs: {},
       };
     }

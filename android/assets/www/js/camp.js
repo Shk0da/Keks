@@ -28,6 +28,7 @@ window.CampScene = (function () {
     relics:{ x: 3.5,  y: 10.5 },  // зеркало реликвий
     board: { x: 3.5,  y: 6.0 },   // доска сводки
     gate:  { x: 9.5,  y: 12.5 },  // врата спуска
+    factory: { x: 5.5, y: 12.2 }, // фабрика трофеев
     fire:  { x: 9.5,  y: 7.5 },   // костёр
   };
 
@@ -69,6 +70,7 @@ window.CampScene = (function () {
 
   function structures(p) {
     return [
+      { id: 'factory', name: 'Фабрика трофеев' },
       { id: 'skills', name: 'Алтарь навыков' },
       { id: 'armory', name: 'Точило Праотца' },
       { id: 'relics', name: 'Зеркало реликвий' },
@@ -138,13 +140,17 @@ window.CampScene = (function () {
       if (d < bd) { bd = d; best = it; }
     }
     game.campFocus = best;
-    // угольки костра
-    if (Math.random() < dt * 6) {
+    // угольки костра: медленно и вертикально вверх
+    // (в мировых координатах вертикаль экрана = диагональ x=y, скорость мала)
+    if (Math.random() < dt * 5) {
+      const v = 7 + Math.random() * 9;              // скорость подъёма, px/с
+      const wob = (Math.random() - 0.5) * 6;        // лёгкое покачивание
       game.particles.spawn({
-        x: SPOTS.fire.x + (Math.random() - 0.5) * 0.3, y: SPOTS.fire.y - 0.2,
-        vx: (Math.random() - 0.5) * 14, vy: -30 - Math.random() * 24,
-        life: 0.9 + Math.random() * 0.6, size: 1.6 + Math.random() * 1.6,
+        x: SPOTS.fire.x + (Math.random() - 0.5) * 0.25, y: SPOTS.fire.y - 0.15,
+        vx: -v + wob, vy: -v - wob,
+        life: 1.4 + Math.random() * 0.9, size: 1.4 + Math.random() * 1.5,
         col: Math.random() < 0.5 ? '#ffd08b' : '#ff9a4b',
+        grav: -2,
       });
     }
   }
@@ -383,6 +389,40 @@ window.CampScene = (function () {
       g.fillText('▼', sx, sy - 92 - Math.sin(t * 2.5) * 2);
       g.textAlign = 'left';
     }
+    // фабрика трофеев: домик с трубой и дымком, шестерёнка над дверью
+    {
+      const { x, y } = SPOTS.factory;
+      const sx = K.isoX(x - 0.5, y - 0.5), sy = K.isoY(x - 0.5, y - 0.5) + K.TH / 2;
+      Sprites.shadowE(g, sx, sy + 2, 26, 11, .45);
+      g.fillStyle = '#5c4a3a';
+      g.fillRect(sx - 18, sy - 34, 36, 34);
+      g.fillStyle = '#6e5a48';
+      g.beginPath();
+      g.moveTo(sx - 23, sy - 34); g.lineTo(sx, sy - 52); g.lineTo(sx + 23, sy - 34);
+      g.closePath(); g.fill();
+      g.strokeStyle = '#3e3228'; g.lineWidth = 1.4; g.stroke();
+      // труба + дым
+      g.fillStyle = '#4a3c30';
+      g.fillRect(sx + 8, sy - 62, 8, 14);
+      const pul = (t * 0.5) % 1;
+      g.fillStyle = 'rgba(220,220,230,' + (0.35 * (1 - pul)) + ')';
+      g.beginPath();
+      g.arc(sx + 12 + Math.sin(t) * 3, sy - 66 - pul * 22, 4 + pul * 7, 0, Math.PI * 2);
+      g.fill();
+      // дверь + шестерёнка
+      g.fillStyle = '#3a2c20';
+      g.fillRect(sx - 6, sy - 18, 12, 18);
+      g.strokeStyle = '#c8a030'; g.lineWidth = 2;
+      g.beginPath(); g.arc(sx, sy - 42, 6, 0, Math.PI * 2); g.stroke();
+      for (let i = 0; i < 6; i++) {
+        const a = t * 0.8 + i * Math.PI / 3;
+        g.beginPath();
+        g.moveTo(sx + Math.cos(a) * 6, sy - 42 + Math.sin(a) * 6);
+        g.lineTo(sx + Math.cos(a) * 9, sy - 42 + Math.sin(a) * 9);
+        g.stroke();
+      }
+    }
+
     // костёр: брёвна + пламя
     {
       const { x, y } = SPOTS.fire;
@@ -428,9 +468,9 @@ window.CampScene = (function () {
     }
   }
 
-  function drawNpcs(g, t, game) {
+  function drawNpc(g, t, game, n) {
     const p = game.player;
-    for (const n of npcs(p)) {
+    {
       const spot = SPOTS[n.id];
       const sx = K.isoX(spot.x - 0.5, spot.y - 0.5), sy = K.isoY(spot.x - 0.5, spot.y - 0.5) + K.TH / 2;
       const look = NPC_LOOK[n.id];
@@ -486,5 +526,5 @@ window.CampScene = (function () {
     g.textAlign = 'left';
   }
 
-  return { build, update, drawDecor, drawStructures, drawNpcs, drawFocus, SPOTS, THEME };
+  return { build, update, drawDecor, drawStructures, drawNpc, npcs, drawFocus, SPOTS, THEME };
 })();

@@ -127,6 +127,31 @@
     </div>
   </section>
 
+  <section id="scrGate" class="scr hidden">
+    <div class="panel">
+      <h2>Врата спуска</h2>
+      <p class="dim" id="gateInfo"></p>
+      <div class="menu">
+        <button id="btnGateDive" class="btn primary big">Спуститься</button>
+        <button id="btnGateBoost" class="btn big">🎬 ×2 опыт на 2 мин</button>
+        <button id="btnGateBack" class="btn">Отойти</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="scrFactory" class="scr hidden">
+    <div class="panel">
+      <h2>🏭 Фабрика трофеев</h2>
+      <p class="dim">Импы-работяги перековывают трофеи из глубин в золото — даже пока ты спишь.</p>
+      <div id="factoryBody"></div>
+      <div class="row">
+        <button id="btnFactoryCollect" class="btn primary">Собрать</button>
+        <button id="btnFactoryHire" class="btn"></button>
+        <button id="btnFactoryBack" class="btn">Уйти</button>
+      </div>
+    </div>
+  </section>
+
   <section id="scrTrader" class="scr hidden">
     <div class="panel wide">
       <h2>Мадам Векс — товары</h2>
@@ -169,7 +194,10 @@
       <h2>Ты повержен…</h2>
       <p class="dead-quips" id="deadQuip"></p>
       <p id="deadStats"></p>
-      <button id="btnDeadCamp" class="btn primary big">В лагерь (за выкуп)</button>
+      <div class="row" style="justify-content:center">
+        <button id="btnAdRevive" class="btn big">🎬 Воскреснуть здесь</button>
+        <button id="btnDeadCamp" class="btn primary big">В лагерь (за выкуп)</button>
+      </div>
     </div>
   </section>
 
@@ -208,6 +236,7 @@
 <script src="js/entities.js"></script>
 <script src="js/skills.js"></script>
 <script src="js/save.js"></script>
+<script src="js/ads.js"></script>
 <script src="js/quests.js"></script>
 <script src="js/camp.js"></script>
 <script src="js/ui.js"></script>

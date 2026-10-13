@@ -19,7 +19,8 @@ window.UI = (function () {
 
   // ===================== Экраны =====================
   const screens = ['scrAge', 'scrTitle', 'scrAbout', 'scrCamp', 'scrSkills',
-    'scrArmory', 'scrRelics', 'scrTrader', 'scrNpc', 'scrSettings', 'scrDescend', 'scrDead', 'scrPause'];
+    'scrArmory', 'scrRelics', 'scrTrader', 'scrNpc', 'scrGate', 'scrFactory',
+    'scrSettings', 'scrDescend', 'scrDead', 'scrPause'];
   let settingsFrom = 'title'; // куда возвращаться из настроек
 
   function show(name) {
@@ -30,6 +31,8 @@ window.UI = (function () {
     if (name === 'title') onTitle();
     if (name === 'camp') onCamp();
     if (name === 'skills') renderSkills();
+    if (name === 'gate') renderGate();
+    if (name === 'factory') renderFactory();
     if (name === 'armory') renderArmory();
     if (name === 'relics') renderRelics();
     if (name === 'trader') renderTrader();
@@ -348,7 +351,8 @@ window.UI = (function () {
       actions = '<button class="btn primary" onclick="UI.acceptNpc(\'' + qs.offer + '\')">Принять</button>' + actions;
     } else if (id === 'veks') {
       body += '<div class="dim" style="font-size:12px">Кстати, витрина — вон там. Товар не смотрит в зубы.</div>';
-      actions += ' <button class="btn" onclick="UI.openTraderFromNpc()">К товарам</button>';
+      actions += ' <button class="btn" onclick="UI.openTraderFromNpc()">К товарам</button>' +
+        ' <button class="btn" onclick="UI.veksAdPotion()">🎬 2 зелья</button>';
     } else if (id === 'moza') {
       body += '<div class="dim" style="font-size:12px">Печать терпелива. Глубины — нет.</div>';
     } else if (id === 'prao') {
@@ -387,6 +391,35 @@ window.UI = (function () {
 
   function openTraderFromNpc() { show('trader'); }
 
+
+  // ===================== Врата и фабрика =====================
+  function renderGate() {
+    const p = game.player;
+    $('gateInfo').textContent = 'Глубина ' + p.depth + (p.depth % 5 === 0 ? ' — логово босса!' : '') +
+      ' · угроза ' + DATA.threat(p.depth, p.level) +
+      ' · билетов рекламы: ' + (p.adTickets || 0) + ' 🎟';
+    $('btnGateBoost').textContent = p.adXpT > 0
+      ? '×2 опыт: ещё ' + Math.ceil(p.adXpT) + ' сек'
+      : '🎬 ×2 опыт на 2 мин';
+    $('btnGateBoost').disabled = p.adXpT > 0;
+  }
+
+  const HIRE_COST = [400, 2000, 8000, 25000];
+  function renderFactory() {
+    const g = game, p = g.player, f = p.factory;
+    const rate = g.factoryRate();
+    const lvl = f.imps;
+    $('factoryBody').innerHTML =
+      'Импов-работяг: <b>' + lvl + '</b> · скорость: <b>' + rate.toFixed(1) + ' золота/сек</b><br>' +
+      'Накоплено: <b>' + Math.floor(f.acc) + ' 💰</b> · трофеев в запасе: <b>' + p.trophies + '</b><br>' +
+      '<span class="dim" style="font-size:12px">Трофеи падают с демонесс (элитки ×3, боссы ×25). Офлайн фабрика работает на 1/60 скорости.</span>';
+    const hire = $('btnFactoryHire');
+    if (lvl >= HIRE_COST.length) { hire.textContent = 'Все импы наняты'; hire.disabled = true; }
+    else {
+      hire.textContent = 'Нанять импа — ' + HIRE_COST[lvl] + ' 💰';
+      hire.disabled = p.gold < HIRE_COST[lvl];
+    }
+  }
 
   // ===================== Оружейная =====================
   let armorySel = null;
@@ -779,6 +812,34 @@ window.UI = (function () {
     tap('btnPause', () => game.togglePause());
     tapFast('btnInteract', () => game.state === 'campScene' && !game.paused && game.interact());
     tap('btnCampBoardBack', () => UI.campBack());
+    tap('btnGateDive', () => { game.enterFloor(game.player.depth); });
+    tap('btnGateBack', () => UI.campBack());
+    tap('btnGateBoost', () => {
+      const p = game.player;
+      if (p.adXpT > 0) return;
+      AdSys.showRewarded('xp_boost', () => { p.adXpT = 120; renderGate(); });
+    });
+    tap('btnFactoryBack', () => UI.campBack());
+    tap('btnFactoryCollect', () => {
+      const f = game.player.factory;
+      const gold = Math.floor(f.acc);
+      if (gold <= 0) { toast('Пока пусто — импы стараются', ''); return; }
+      f.acc = 0; game.player.gold += gold;
+      AudioSys.sfx('coin');
+      toast('+' + gold + ' золота с фабрики', 'gold');
+      SaveSys.save(game); renderFactory();
+    });
+    tap('btnFactoryHire', () => {
+      const p = game.player, f = p.factory;
+      if (f.imps >= HIRE_COST.length || p.gold < HIRE_COST[f.imps]) return;
+      p.gold -= HIRE_COST[f.imps]; f.imps++;
+      AudioSys.sfx('levelup');
+      toast('🏭 Имп-работяга нанят!', 'gold');
+      SaveSys.save(game); renderFactory();
+    });
+    tap('btnAdRevive', () => {
+      AdSys.showRewarded('revive', () => game.revive());
+    });
 
     // титул
     tap('btnNew', () => {
@@ -854,6 +915,16 @@ window.UI = (function () {
   return {
     init, show, hideAll, updateHUD, goldPing, toast, dialogue, bossBannerShow, floorCard,
     openNpc, closeNpc, acceptNpc, turnInNpc, openTraderFromNpc, campMode, campBack,
+    veksAdPotion() {
+      const p = game.player;
+      if ((p._adPotionAt || -1e9) > p.playtime - 180) { toast('Векс устала от рекламы — приходи позже', ''); return; }
+      AdSys.showRewarded('potions', () => {
+        p._adPotionAt = p.playtime;
+        p.potions.heal = (p.potions.heal || 0) + 2;
+        toast('+2 зелья «Стыд-трава»', 'gold');
+        SaveSys.save(game);
+      });
+    },
     move, get settings() { return settings; },
   };
 })();

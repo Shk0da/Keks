@@ -329,3 +329,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 #hud.camp-mode #btnInteract { display: block }
 #btnInteract{right:26px;bottom:62px;
   background:radial-gradient(circle at 35% 30%,rgba(120,90,200,.95),rgba(35,20,60,.95))}
+
+/* демо-оверлей рекламы (rewarded / interstitial) */
+#adOverlay{position:fixed;inset:0;z-index:70;background:rgba(4,2,8,.88);
+  display:flex;align-items:center;justify-content:center}
+#adOverlay.hidden{display:none}
+.ad-card{background:#141020;border:1px solid rgba(255,150,200,.3);border-radius:16px;
+  padding:26px 30px;text-align:center;max-width:min(84vw,420px)}
+.ad-badge{display:inline-block;font-size:11px;letter-spacing:.25em;color:#9aa;
+  border:1px solid #445;border-radius:6px;padding:2px 8px;margin-bottom:14px}
+.ad-body{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.ad-count{font-family:var(--serif);font-size:26px;color:var(--gold);margin-bottom:14px}
+
+/* фабрика */
+#factoryBody{font-size:14px;color:var(--muted);line-height:1.7;margin:8px 0 12px}
+#factoryBody b{color:var(--gold)}

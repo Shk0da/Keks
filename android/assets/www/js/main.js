@@ -125,6 +125,7 @@ window.game = null;
       this.player = new Entities.Player(s);
       if (this.player.hp == null) { this.player.hp = this.player.maxHp; this.player.mp = this.player.maxMp; }
       this.toCamp();
+      this.factoryOffline();
     },
     toCamp() {
       // лагерь — живая комната: уровень без врагов, NPC и постройки на местах
@@ -157,7 +158,7 @@ window.game = null;
         case 'armory': UI.show('armory'); break;
         case 'relics': UI.show('relics'); break;
         case 'board': UI.show('camp'); break;
-        case 'gate': this.enterFloor(this.player.depth); break;
+        case 'gate': UI.show('gate'); break;
       }
     },
     togglePause() {
@@ -275,16 +276,16 @@ window.game = null;
     tileVis(x, y) {
       const lvl = this.level;
       const tx = K.clamp(x | 0, 0, lvl.w - 1), ty = K.clamp(y | 0, 0, lvl.h - 1);
-      return lvl.vis[Dungeon.idx(tx, ty)];
+      return lvl.vis[(ty * lvl.w + tx)];
     },
     flowStep(x, y) {
       const lvl = this.level, f = lvl.flow;
-      let bx = 0, by = 0, best = f[Dungeon.idx(K.clamp(x | 0, 0, lvl.w - 1), K.clamp(y | 0, 0, lvl.h - 1))];
+      let bx = 0, by = 0, best = f[(K.clamp(y | 0, 0, lvl.h - 1) * lvl.w + K.clamp(x | 0, 0, lvl.w - 1))];
       if (best < 0) return [0, 0];
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
         const nx = (x | 0) + dx, ny = (y | 0) + dy;
         if (nx < 0 || ny < 0 || nx >= lvl.w || ny >= lvl.h) continue;
-        const v = f[Dungeon.idx(nx, ny)];
+        const v = f[ny * lvl.w + nx];
         if (v >= 0 && v < best) { best = v; bx = dx; by = dy; }
       }
       if (!bx && !by) { // уже ближе всех — прямо к игроку
@@ -505,6 +506,8 @@ window.game = null;
     },
     onEnemyDead(e) {
       this.floorKills++;
+      // тайкун-мета: трофеи для фабрики (элитки ×3)
+      this.player.trophies += e.elite ? 3 : 1;
       if (window.QuestSys) QuestSys.onKill(this.player, e);
       // «Азарт»: фраг продолжает цепочку (урон по герою рвёт её в playerHurt)
       const p = this.player;
@@ -535,6 +538,8 @@ window.game = null;
     bossDefeated(b) {
       this.bossDead = true;
       this.exitPortal = { x: b.x, y: b.y };
+      this.player.trophies += 25;
+      if (window.AdSys) AdSys.grantBossTicket(this);
       if (window.QuestSys) QuestSys.onBossDefeated(this.player, this.level.depth);
       UI.dialogue(b.bd.name, K.choice(Math.random, b.bd.outro));
       UI.dialogue('Кекс', 'Портал открыт. Реликвия моя. Совесть по-прежнему у входа.');
@@ -549,7 +554,7 @@ window.game = null;
       const ty0 = Math.floor(ent.y - r), ty1 = Math.floor(ent.y + r);
       for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
         if (tx < 0 || ty < 0 || tx >= lvl.w || ty >= lvl.h) continue;
-        const t = lvl.tiles[Dungeon.idx(tx, ty)];
+        const t = lvl.tiles[(ty * lvl.w + tx)];
         if (t === 1 || t === 3) continue;
         // ближайшая точка квадрата тайла
         const cx = K.clamp(ent.x, tx, tx + 1), cy = K.clamp(ent.y, ty, ty + 1);
@@ -573,9 +578,10 @@ window.game = null;
 
       if (this.hitstopT > 0) { this.hitstopT -= dt; dt *= 0.12; }
 
-      if (this.state === 'dungeon' && !this.paused) this.updateDungeon(dt);
+      if (this.state === 'dungeon' && !this.paused) { this.updateDungeon(dt); this.factoryTick(dt); }
       if (this.state === 'campScene' && !this.paused) {
         CampScene.update(dt, this);
+        this.factoryTick(dt);
         this.particles.update(dt);
         const p = this.player;
         this.camX = K.lerp(this.camX, K.isoX(p.x, p.y), Math.min(1, dt * 7));
@@ -729,8 +735,47 @@ window.game = null;
 
       UI.updateHUD(p);
     },
+    // тайкун-мета «Фабрика трофеев»: импы превращают трофеи в золото
+    factoryRate() {
+      const f = this.player.factory;
+      return f.imps === 0 ? 0 : f.imps * 1.5 * (1 + this.player.bestDepth * 0.03);
+    },
+    factoryTick(dt) {
+      const f = this.player.factory;
+      if (f.imps === 0) return;
+      f.acc += this.factoryRate() * dt;
+      f.lastTs = Date.now();
+    },
+    // офлайн-доход фабрики при загрузке
+    factoryOffline() {
+      const f = this.player.factory;
+      if (f.imps === 0) { f.lastTs = Date.now(); return; }
+      const away = K.clamp((Date.now() - (f.lastTs || Date.now())) / 1000, 0, 8 * 3600);
+      const gold = Math.floor(this.factoryRate() * away / 60);  // офлайн — 1/60 скорости
+      f.lastTs = Date.now();
+      if (gold > 0) {
+        this.player.gold += gold;
+        UI.toast('🏭 Фабрика принесла ' + gold + ' золота, пока ты отдыхал', 'gold');
+      }
+    },
+    // оживление после смерти (rewarded)
+    revive() {
+      const p = this.player;
+      p.hp = Math.round(p.maxHp * 0.6);
+      p.mp = p.maxMp;
+      p.iframes = 3;
+      p.streak = 0;
+      for (const e of this.enemies) if (!e.dead) e.charmT = Math.max(e.charmT, 1.6);
+      this.state = 'dungeon';
+      this.paused = false;
+      UI.show(null);
+      AudioSys.sfx('levelup');
+      UI.toast('Второе дыхание от рекламодателя! ❤', 'gold');
+    },
     floorDone() {
       if (this.state !== 'dungeon') return;
+      // межстраничная реклама: между активностями, не чаще кулдауна
+      if (window.AdSys) AdSys.maybeInterstitial(this);
       // диабловский переход: скрип врат → генерация → карточка нового этажа
       AudioSys.sfx('door');
       // динамика: бонус за скоростную зачистку (вошёл в пар-время этажа)
@@ -781,9 +826,9 @@ window.game = null;
       const margin = 80;
       for (let y = 0; y < lvl.h; y++) {
         for (let x = 0; x < lvl.w; x++) {
-          const v = vis[Dungeon.idx(x, y)];
+          const v = vis[(y * lvl.w + x)];
           if (!v) continue;
-          const tt = lvl.tiles[Dungeon.idx(x, y)];
+          const tt = lvl.tiles[(y * lvl.w + x)];
           if (tt === 0) continue;
           const sx = K.isoX(x, y), sy = K.isoY(x, y);
           if (sx < this.camX - cw / zoom / 2 - margin || sx > this.camX + cw / zoom / 2 + margin ||
@@ -795,33 +840,42 @@ window.game = null;
       }
       ctx.globalAlpha = 1;
 
+      // --- лагерь: ковёр/постройки рисуются под объектами ---
+      if (lvl.isCamp) { CampScene.drawDecor(ctx, t); CampScene.drawStructures(ctx, t); }
+
       // --- сортируемые объекты ---
       const items = [];
       for (let y = 0; y < lvl.h; y++) for (let x = 0; x < lvl.w; x++) {
-        const v = vis[Dungeon.idx(x, y)];
+        const v = vis[(y * lvl.w + x)];
         if (!v) continue;
-        if (lvl.tiles[Dungeon.idx(x, y)] === 2) items.push({ d: x + y, kind: 'wall', x, y, v });
+        if (lvl.tiles[(y * lvl.w + x)] === 2) items.push({ d: x + y, kind: 'wall', x, y, v });
       }
       for (const pr of lvl.props) {
-        if (!vis[Dungeon.idx(pr.x | 0, pr.y | 0)]) continue;
+        if (!vis[((pr.y | 0) * lvl.w + (pr.x | 0))]) continue;
         items.push({ d: pr.x + pr.y, kind: 'prop', o: pr });
       }
       for (const c of lvl.chests) {
-        if (!vis[Dungeon.idx(c.x | 0, c.y | 0)]) continue;
+        if (!vis[((c.y | 0) * lvl.w + (c.x | 0))]) continue;
         items.push({ d: c.x + c.y, kind: 'chest', o: c });
       }
       if (!lvl.isBoss && lvl.exit) items.push({ d: lvl.exit.x + lvl.exit.y, kind: 'stairs', o: lvl.exit });
       if (this.exitPortal) items.push({ d: this.exitPortal.x + this.exitPortal.y, kind: 'portal', o: this.exitPortal });
       for (const tc of lvl.torches) {
-        if (!vis[Dungeon.idx(tc.x | 0, tc.y | 0)]) continue;
+        if (!vis[((tc.y | 0) * lvl.w + (tc.x | 0))]) continue;
         items.push({ d: tc.x + tc.y + 0.9, kind: 'torch', o: tc });
       }
       for (const pk of this.pickups) items.push({ d: pk.x + pk.y, kind: 'pickup', o: pk });
       for (const e of this.enemies) {
         if (e.spawnT > 0) continue;
-        const v = vis[Dungeon.idx(e.x | 0, e.y | 0)];
+        const v = vis[((e.y | 0) * lvl.w + (e.x | 0))];
         if (v !== 2 && !e.dead) continue;
         items.push({ d: e.x + e.y, kind: 'enemy', o: e });
+      }
+      if (lvl.isCamp) {
+        for (const n of CampScene.npcs(p)) {
+          const sp = CampScene.SPOTS[n.id];
+          items.push({ d: sp.x + sp.y - 0.05, kind: 'campNpc', o: n });
+        }
       }
       items.push({ d: p.x + p.y + 0.01, kind: 'player' });
 
@@ -854,7 +908,7 @@ window.game = null;
           }
           case 'prop': {
             const o = it.o;
-            ctx.globalAlpha = vis[Dungeon.idx(o.x | 0, o.y | 0)] === 2 ? 1 : 0.42;
+            ctx.globalAlpha = vis[((o.y | 0) * lvl.w + (o.x | 0))] === 2 ? 1 : 0.42;
             Sprites.drawProp(ctx, o, K.isoX(o.x - 0.5, o.y - 0.5), K.isoY(o.x - 0.5, o.y - 0.5) + K.TH / 2, t);
             ctx.globalAlpha = 1;
             break;
@@ -1017,6 +1071,12 @@ window.game = null;
         }
       }
 
+      // --- лагерь: NPC поверх мира, стрелка фокуса ---
+      if (lvl.isCamp) {
+        for (const it of items) if (it.kind === 'campNpc') CampScene.drawNpc(ctx, t, this, it.o);
+        if (!this.paused) CampScene.drawFocus(ctx, t, this);
+      }
+
       // --- снаряды ---
       for (const pr of this.projectiles) {
         const sx = K.isoX(pr.x - 0.5, pr.y - 0.5), sy = K.isoY(pr.x - 0.5, pr.y - 0.5) - 14;
@@ -1045,14 +1105,6 @@ window.game = null;
       // --- частицы и числа урона ---
       this.particles.draw(ctx, (wx, wy) => [K.isoX(wx, wy), K.isoY(wx, wy)]);
       this.dmgNums.draw(ctx, (wx, wy) => [K.isoX(wx, wy), K.isoY(wx, wy)]);
-
-      // --- лагерь: постройки и NPC (в мировых координатах, до света) ---
-      if (lvl.isCamp) {
-        CampScene.drawDecor(ctx, t);
-        CampScene.drawStructures(ctx, t);
-        CampScene.drawNpcs(ctx, t, this);
-        if (!this.paused) CampScene.drawFocus(ctx, t, this);
-      }
 
       // --- облачка реплик ---
       ctx.font = '12px system-ui, sans-serif';
