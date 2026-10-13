@@ -848,13 +848,14 @@ window.game = null;
             const sx = K.isoX(e.x - 0.5, e.y - 0.5), sy = K.isoY(e.x - 0.5, e.y - 0.5) + K.TH / 2;
             const dieDur = e.crown ? 1.4 : 1.0;
             if (e.dead) {
-              // гибель: дрожит стоя → валится вокруг центра корпуса (не улетает)
-              // → лёжа мерцает, как старый спрайт, и гаснет → звёздочки
+              // гибель на месте: дрожит стоя → оседает/сплющивается к земле
+              // ровно там, где стояла (без разлёта) → мерцает и гаснет → звёздочки
               const prog = 1 - K.clamp(e.dieT / dieDur, 0, 1);
               e.hitT = prog < 0.45 ? 0.9 : 0;
               const fp = prog < 0.45 ? 0 : (prog - 0.45) / 0.55;      // фаза падения
-              const fall = Math.pow(fp, 1.6);                          // разгон: валится всё быстрее
-              const ang = -1.35 * fall + 0.1 * Math.sin(fp * Math.PI) * (1 - fp); // лёгкий шлепок в конце
+              const fall = Math.pow(fp, 1.4);                          // оседает с разгоном
+              const squashY = 1 - 0.62 * fall;                         // тело опадает вниз
+              const squashX = 1 + 0.18 * fall;                         // и чуть расползается
               // мерцание: половина времени — мигает, к концу тусклее и реже
               let alpha;
               if (prog < 0.45) alpha = 1;
@@ -863,11 +864,11 @@ window.game = null;
                 alpha = K.clamp((1 - prog) * 2.4, 0, 1) * blink;
               }
               ctx.globalAlpha = alpha;
-              const cx0 = sx + 4 * (e.size || 1), cy0 = sy - 26 * (e.size || 1); // центр корпуса
               ctx.save();
-              ctx.translate(cx0, cy0 + 3 * (e.size || 1) * fall);     // оседает вниз
-              ctx.rotate(ang);
-              ctx.translate(-cx0, -cy0);
+              ctx.translate(sx, sy + 2 * (e.size || 1) * fall);
+              ctx.scale(squashX, squashY);
+              ctx.rotate(-0.12 * fall);                                // едва заметный наклон
+              ctx.translate(-sx, -sy);
               Sprites.drawDemon(ctx, e, sx, sy, t);
               ctx.restore();
               // Cartoon-звёздочки над лежащей головой
