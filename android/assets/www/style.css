@@ -34,13 +34,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 #hud{position:fixed;inset:0;z-index:10;pointer-events:none;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 
-#topBar{position:absolute;top:calc(8px + env(safe-area-inset-top));left:14px;right:14px;
-  display:flex;align-items:flex-start;justify-content:flex-end;font-family:var(--serif)}
-/* глубина — по центру, в нише между сферами HP/MP */
-#depthLabel{position:absolute;top:calc(26px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
-  width:min(220px,26vw);text-align:center;font-size:12.5px;line-height:1.35;
-  color:var(--gold);text-shadow:0 0 8px rgba(240,192,96,.55);letter-spacing:.04em}
-#btnPause{pointer-events:auto;width:44px;height:44px;border-radius:12px;
+#topBar{position:absolute;top:calc(8px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));
+  display:flex;align-items:center;gap:10px;font-family:var(--serif)}
+/* глубина — строкой у кнопки паузы */
+#depthLabel{max-width:44vw;text-align:right;font-size:12px;line-height:1.3;
+  color:var(--gold);text-shadow:0 0 8px rgba(240,192,96,.55);letter-spacing:.03em}
+#btnPause{pointer-events:auto;width:44px;height:44px;border-radius:12px;flex:0 0 auto;
   border:1px solid var(--panel-line);background:var(--panel);color:var(--ink);font-size:14px}
 
 /* XP — диабловская полоса вдоль нижнего края; уровень и золото — над ней слева */
@@ -53,21 +52,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 #xpFill{height:100%;width:0%;background:linear-gradient(90deg,#a45ff0,#f08fe0);
   box-shadow:0 0 10px rgba(240,143,224,.8);transition:width .25s}
 
-/* сферы HP/MP */
-.orb{position:absolute;top:calc(10px + env(safe-area-inset-top));width:86px;height:86px;border-radius:50%;
-  border:2px solid var(--panel-line);overflow:hidden;background:#120a1a;
-  box-shadow:0 4px 18px rgba(0,0,0,.6),inset 0 0 22px rgba(0,0,0,.8)}
-#orbHp{left:calc(50% - 200px)}
-#orbMp{left:calc(50% + 114px)}
-@media (max-width:760px){
-  #orbHp{left:calc(50% - 190px);width:74px;height:74px}
-  #orbMp{left:calc(50% + 116px);width:74px;height:74px}
-}
-.orb-fill{position:absolute;left:0;right:0;bottom:0;height:100%;transition:height .2s}
-#hpFill{background:radial-gradient(circle at 50% 20%,#ff8aa8,#c22a52 70%,#7a1230)}
-#mpFill{background:radial-gradient(circle at 50% 20%,#9ec2ff,#3555c2 70%,#182a6e)}
-.orb-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000}
+/* полосы HP/MP (вместо сфер): стек в левом верхнем углу */
+#vitals{position:absolute;top:calc(10px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));
+  width:min(44vw,400px);display:flex;flex-direction:column;gap:5px;z-index:12}
+.bar{position:relative;height:22px;border:1px solid var(--panel-line);border-radius:7px;
+  background:rgba(10,5,16,.88);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;width:100%;transition:width .2s}
+.hpbar .bar-fill{background:linear-gradient(180deg,#ff8aa8,#c22a52 65%,#8a1636)}
+.mpbar .bar-fill{background:linear-gradient(180deg,#9ec2ff,#3555c2 65%,#1c2f6e)}
+.bar-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000;letter-spacing:.04em}
+/* низкое HP — полоса тревожно пульсирует */
+.hpbar.low{animation:lowHp 0.9s ease-in-out infinite}
+@keyframes lowHp{0%,100%{box-shadow:0 0 4px rgba(255,60,90,.4)}50%{box-shadow:0 0 14px rgba(255,60,90,.95)}}
 
 /* джойстик */
 #stickZone{position:absolute;left:0;top:0;bottom:0;width:55%;pointer-events:auto}
@@ -94,9 +91,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pbtn .cdRing{position:absolute;inset:-3px;border-radius:50%;
   background:conic-gradient(rgba(0,0,0,.75) var(--p,0%),transparent 0)}
 
-/* активные эффекты: под сферами */
-#buffBar{position:absolute;left:50%;transform:translateX(-50%);
-  top:calc(104px + env(safe-area-inset-top));display:flex;gap:6px;pointer-events:none}
+/* активные эффекты: под полосками HP/MP слева */
+#buffBar{position:absolute;left:calc(12px + env(safe-area-inset-left));
+  top:calc(66px + env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:6px;
+  max-width:min(44vw,400px);pointer-events:none}
 .buffPill{background:rgba(15,8,22,.85);border:1.5px solid var(--bcol,#fff);
   border-radius:10px;padding:3px 9px;font-size:12px;color:var(--ink);
   box-shadow:0 0 10px rgba(0,0,0,.4)}

@@ -123,10 +123,11 @@ window.UI = (function () {
     buildPotionBar();
     if (!p) return;
     const hp = p.hp != null ? p.hp : p.maxHp;
-    $('hpFill').style.height = K.clamp(hp / p.maxHp * 100, 0, 100) + '%';
-    $('hpText').textContent = Math.ceil(hp) + '/' + p.maxHp;
-    $('mpFill').style.height = K.clamp(p.mp / p.maxMp * 100, 0, 100) + '%';
-    $('mpText').textContent = Math.floor(p.mp);
+    $('hpFill').style.width = K.clamp(hp / p.maxHp * 100, 0, 100) + '%';
+    $('hpText').textContent = '❤ ' + Math.ceil(hp) + '/' + p.maxHp;
+    document.querySelector('.hpbar').classList.toggle('low', hp < p.maxHp * 0.3);
+    $('mpFill').style.width = K.clamp(p.mp / p.maxMp * 100, 0, 100) + '%';
+    $('mpText').textContent = '✦ ' + Math.floor(p.mp);
     $('xpFill').style.width = K.clamp(p.xp / p.xpNext * 100, 0, 100) + '%';
     $('lvlLabel').textContent = p.level >= DATA.MAX_LEVEL
       ? 'ур. 100 · МАКС'
