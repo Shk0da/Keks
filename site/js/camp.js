@@ -146,14 +146,14 @@ window.CampScene = (function () {
     // угольки костра: медленно и вертикально вверх
     // (в мировых координатах вертикаль экрана = диагональ x=y, скорость мала)
     if (Math.random() < dt * 5) {
-      const v = 7 + Math.random() * 9;              // скорость подъёма, px/с
+      const v = 1.5 + Math.random() * 2;            // очень медленный подъём, px/с
       const wob = (Math.random() - 0.5) * 6;        // лёгкое покачивание
       game.particles.spawn({
         x: SPOTS.fire.x + (Math.random() - 0.5) * 0.25, y: SPOTS.fire.y - 0.15,
         vx: -v + wob, vy: -v - wob,
         life: 1.4 + Math.random() * 0.9, size: 1.4 + Math.random() * 1.5,
         col: Math.random() < 0.5 ? '#ffd08b' : '#ff9a4b',
-        grav: -2,
+        grav: 0,
       });
     }
   }
