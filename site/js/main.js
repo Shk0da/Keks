@@ -36,6 +36,7 @@ window.game = null;
       window.addEventListener('resize', () => this.resize());
       UI.init(this);
       this.initInput();
+      this.initDoubleTap();
 
       // фон меню — угольки
       for (let i = 0; i < 40; i++) this.menuParts.push({
@@ -108,6 +109,38 @@ window.game = null;
     },
 
     // ===================== состояния =====================
+    // двойной тап по канвасу — удар хлыстом в направлении тапа
+    initDoubleTap() {
+      const cv = document.getElementById('c');
+      let lastTap = 0, lastX = 0, lastY = 0;
+      cv.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        const t = e.changedTouches[0];
+        const px = t.clientX, py = t.clientY;
+        if (now - lastTap < 320 && Math.abs(px - lastX) < 40 && Math.abs(py - lastY) < 40) {
+          // двойной тап: ударить в направлении точки
+          if (this.state === 'dungeon' && !this.paused && this.player) {
+            const p = this.player;
+            if (p.attackCd <= 0 && p.spinT <= 0) {
+              // перевести экран в мировые координаты
+              const wx = (px - cw / 2) / zoom + this.camX;
+              const wy = (py - ch / 2) / zoom + this.camY;
+              const ang = Math.atan2(wy - K.isoY(p.x - 0.5, p.y - 0.5), wx - K.isoX(p.x - 0.5, p.y - 0.5));
+              // мир: инвертировать изометрию для мирового угла
+              p.facing = Math.atan2(
+                (Math.sin(ang) + Math.cos(ang)),
+                (Math.cos(ang) - Math.sin(ang))
+              );
+              p.tryAttack(this);
+            }
+          }
+          lastTap = 0;
+        } else {
+          lastTap = now; lastX = px; lastY = py;
+        }
+      }, { passive: true });
+    },
+
     toTitle(wiped) {
       this.state = 'title';
       this.paused = false;
