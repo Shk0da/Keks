@@ -368,8 +368,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 /* значок «?» и версия на титуле */
 .help-btn{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));
   width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,150,200,.35);
-  background:rgba(20,10,28,.85);color:var(--rose);font-family:var(--serif);font-size:22px;
-  cursor:pointer;z-index:12;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+  background:transparent;color:var(--rose);font-family:var(--serif);font-size:22px;
+  cursor:pointer;z-index:12}
 .help-btn:active{transform:scale(.9);filter:brightness(1.4)}
 .ver-label{position:absolute;left:calc(14px + env(safe-area-inset-left));bottom:calc(16px + env(safe-area-inset-bottom));
   font-size:11px;color:var(--muted);opacity:.6;letter-spacing:.08em;pointer-events:none;z-index:12}
