@@ -75,7 +75,7 @@ rm -rf "$WORK"
 mkdir -p "$WORK/gen" "$WORK/classes" "$WORK/dex"
 
 VCODE="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 0)"
-[ "$VCODE" -gt 0 ] || VCODE=1
+[ "$VCODE" -gt 100 ] || VCODE=100
 VNAME="1.0"
 
 MANIFEST_B="$WORK/AndroidManifest.xml"
