@@ -6,6 +6,116 @@ window.Sprites = (function () {
   const TW = K.TW, TH = K.TH, WH = K.WH;
   let cache = {}; // theme.id → {floors:[canvas], wallTop..}
 
+  // ---------- canvas-иконки способностей ----------
+  const iconCache = {};
+  function icon(id) {
+    if (iconCache[id]) return iconCache[id];
+    const cv = document.createElement('canvas');
+    cv.width = 48; cv.height = 48;
+    const g = cv.getContext('2d');
+    g.scale(2, 2);
+    g.lineCap = 'round';
+    switch (id) {
+      case 'atk':
+        g.strokeStyle = '#a06a3a'; g.lineWidth = 3.4;
+        g.beginPath(); g.ellipse(12, 12, 7, 6, 0.4, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.ellipse(12, 12, 3.6, 3, 0.4, 0, Math.PI * 2); g.stroke();
+        g.strokeStyle = '#c88aa0'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(18, 16); g.quadraticCurveTo(21, 10, 19, 4); g.stroke();
+        g.strokeStyle = '#3a2030'; g.lineWidth = 3.8;
+        g.beginPath(); g.moveTo(6, 18); g.lineTo(2.5, 21.5); g.stroke();
+        g.fillStyle = '#ffd8ec';
+        g.beginPath(); g.arc(19, 4, 1.4, 0, Math.PI * 2); g.fill();
+        break;
+      case 'spatter':
+        for (var d1 of [[12, 4], [6, 8], [18, 8], [8, 14], [16, 14], [12, 10]]) {
+          g.fillStyle = '#f4f0ff';
+          g.beginPath();
+          g.moveTo(d1[0], d1[1] - 4);
+          g.quadraticCurveTo(d1[0] + 3, d1[1], d1[0], d1[1] + 3);
+          g.quadraticCurveTo(d1[0] - 3, d1[1], d1[0], d1[1] - 4);
+          g.fill();
+        }
+        g.fillStyle = '#c8c4e0';
+        g.beginPath(); g.arc(10, 19, 1.4, 0, Math.PI * 2); g.fill();
+        break;
+      case 'spin':
+        g.strokeStyle = '#ff9ecf'; g.lineWidth = 2.6;
+        g.beginPath();
+        for (var a1 = 0; a1 < Math.PI * 4.6; a1 += 0.15) {
+          var r1 = 1.4 + a1 * 1.05;
+          var px1 = 12 + Math.cos(a1) * r1, py1 = 12 + Math.sin(a1) * r1 * 0.9;
+          a1 === 0 ? g.moveTo(px1, py1) : g.lineTo(px1, py1);
+        }
+        g.stroke();
+        g.fillStyle = '#e8b4c8'; g.fillRect(18, 4, 3, 3);
+        g.fillStyle = '#c88aa0'; g.fillRect(21, 7, 3, 3);
+        break;
+      case 'dash':
+        g.strokeStyle = '#9ec2ff'; g.lineWidth = 2.4;
+        g.beginPath(); g.moveTo(3, 8); g.quadraticCurveTo(10, 4, 20, 9); g.stroke();
+        g.beginPath(); g.moveTo(3, 14); g.quadraticCurveTo(10, 10, 20, 15); g.stroke();
+        g.beginPath(); g.moveTo(5, 20); g.quadraticCurveTo(11, 16, 19, 20); g.stroke();
+        g.fillStyle = '#f4f0ff';
+        g.beginPath(); g.moveTo(22, 12); g.lineTo(13, 7); g.lineTo(15, 12); g.lineTo(13, 17);
+        g.closePath(); g.fill();
+        break;
+      case 'charm':
+        drawHeart(g, 12, 13, 8, '#ff6a9e');
+        g.fillStyle = 'rgba(255,255,255,.6)';
+        g.fillRect(9, 9, 2, 2);
+        g.strokeStyle = '#ffd860'; g.lineWidth = 1.2;
+        for (var s1 of [[3, 5], [20, 4], [4, 19], [21, 18]]) {
+          g.beginPath();
+          g.moveTo(s1[0] - 2, s1[1]); g.lineTo(s1[0] + 2, s1[1]);
+          g.moveTo(s1[0], s1[1] - 2); g.lineTo(s1[0], s1[1] + 2);
+          g.stroke();
+        }
+        break;
+      case 'interact':
+        g.fillStyle = '#2c2038';
+        g.beginPath();
+        g.moveTo(3, 5); g.lineTo(21, 5); g.lineTo(21, 15); g.lineTo(10, 15);
+        g.lineTo(6, 20); g.lineTo(7, 15); g.lineTo(3, 15);
+        g.closePath(); g.fill();
+        g.strokeStyle = '#c9a0e8'; g.lineWidth = 1.2; g.stroke();
+        g.strokeStyle = '#f3e8f5'; g.lineWidth = 1.6;
+        g.beginPath(); g.moveTo(6, 9); g.lineTo(18, 9); g.stroke();
+        g.beginPath(); g.moveTo(6, 12); g.lineTo(14, 12); g.stroke();
+        break;
+      case 'potion':
+        g.fillStyle = '#58d890';
+        g.beginPath(); g.ellipse(12, 14, 5.5, 7, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#2a7a50';
+        g.fillRect(10, 3.5, 4, 5);
+        g.strokeStyle = '#1e5a3a'; g.lineWidth = 1.2;
+        g.beginPath(); g.ellipse(12, 14, 5.5, 7, 0, 0, Math.PI * 2); g.stroke();
+        g.fillStyle = 'rgba(255,255,255,.55)';
+        g.beginPath(); g.ellipse(10, 11, 1.6, 2.6, 0.4, 0, 0, Math.PI * 2); g.fill();
+        break;
+    }
+    iconCache[id] = cv;
+    return cv;
+  }
+
+  // ---------- кэш света ----------
+  const lightCache = {};
+  function lightSprite(col, alpha) {
+    var key = col + '_' + Math.round(alpha * 20);
+    if (lightCache[key]) return lightCache[key];
+    var cv = document.createElement('canvas');
+    cv.width = 256; cv.height = 256;
+    var lg = cv.getContext('2d');
+    var grd = lg.createRadialGradient(128, 128, 8, 128, 128, 128);
+    grd.addColorStop(0, K.rgba(col, alpha));
+    grd.addColorStop(0.7, K.rgba(col, alpha * 0.55));
+    grd.addColorStop(1, K.rgba(col, 0));
+    lg.fillStyle = grd;
+    lg.fillRect(0, 0, 256, 256);
+    lightCache[key] = cv;
+    return cv;
+  }
+
   // ============ подготовка кэша темы ============
   function prepare(theme) {
     if (cache[theme.id]) return cache[theme.id];
@@ -1275,6 +1385,7 @@ window.Sprites = (function () {
   }
 
   return {
+    icon, lightSprite,
     prepare, drawFloor, drawWall, drawHazard, drawProp, drawTorch,
     drawStairs, drawDoor, drawPortal, drawChest,
     drawPlayer, drawDemon, makeWhip,

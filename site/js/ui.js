@@ -115,6 +115,16 @@ window.UI = (function () {
   }
 
   // ===================== HUD =====================
+  let iconsBuilt = false;
+  function buildIcons() {
+    if (iconsBuilt || !window.Sprites || !Sprites.icon) return;
+    iconsBuilt = true;
+    document.querySelectorAll('[data-icon]').forEach(function(el) {
+      var cv = Sprites.icon(el.dataset.icon);
+      if (cv) { cv.className = 'btn-icon'; el.textContent = ''; el.appendChild(cv); }
+    });
+  }
+
   let cdBtns = null;
   let potionBarBuilt = false;
 
@@ -796,8 +806,6 @@ window.UI = (function () {
     $('volSfx').value = settings.volSfx;
     $('volMus').value = settings.volMus;
     $('stickSide').value = settings.stickSide;
-    $('chkFps').checked = !!settings.fps;
-    $('fps').classList.toggle('hidden', !settings.fps);
   }
   function persistSettings() {
     SaveSys.saveSettings(settings);
@@ -920,7 +928,7 @@ window.UI = (function () {
     $('volSfx').oninput = () => { settings.volSfx = +$('volSfx').value; persistSettings(); };
     $('volMus').oninput = () => { settings.volMus = +$('volMus').value; persistSettings(); };
     $('stickSide').onchange = () => { settings.stickSide = $('stickSide').value; persistSettings(); };
-    $('chkFps').onchange = () => { settings.fps = $('chkFps').checked; $('fps').classList.toggle('hidden', !settings.fps); persistSettings(); };
+    $('chkFps').onchange = () => { settings.fps = persistSettings(); };
 
     // «назад» из Android-обёртки: данж — пауза, лагерь — титул, титул — двойной выход
     window.__keksBack = (exitFn) => {
