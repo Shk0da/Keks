@@ -605,6 +605,8 @@ window.UI = (function () {
 
 
   function onTitle() {
+    var vl = document.getElementById('verLabel');
+    if (vl) vl.textContent = 'v' + (document.querySelector('meta[name=version]') ? document.querySelector('meta[name=version]').content : '1.0');
     $('btnContinue').classList.toggle('hidden', !SaveSys.exists() || !SaveSys.ageOk());
   }
 
@@ -877,7 +879,12 @@ window.UI = (function () {
       else game.newGame();
     });
     tap('btnContinue', () => { AudioSys.ensure(); game.continueGame(); });
-    tap('btnAbout', () => show('about'));
+    tap('btnHelp', () => show('about'));
+    tap('btnExit', () => {
+      if (window.KeksExit) window.KeksExit.exit();
+      else if (navigator.app) navigator.app.exitApp();
+      else window.close();
+    });
     tap('btnAboutBack', () => show('title'));
 
     // 18+
