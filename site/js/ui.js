@@ -879,7 +879,7 @@ window.UI = (function () {
       else game.newGame();
     });
     tap('btnContinue', () => { AudioSys.ensure(); game.continueGame(); });
-    tap('btnHelp', () => show('about'));
+    tap('verLabel', () => show('about'));
     tap('btnExit', () => {
       if (window.KeksExit) window.KeksExit.exit();
       else if (navigator.app) navigator.app.exitApp();
