@@ -606,7 +606,7 @@ window.UI = (function () {
 
   function onTitle() {
     var vl = document.getElementById('verLabel');
-    if (vl) vl.textContent = 'v' + (document.querySelector('meta[name=version]') ? document.querySelector('meta[name=version]').content : '1.0');
+    if (vl) vl.textContent = 'v1.0.48';
     $('btnContinue').classList.toggle('hidden', !SaveSys.exists() || !SaveSys.ageOk());
   }
 
