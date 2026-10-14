@@ -366,10 +366,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 #hud.camp-mode #btnArmoryQuick{display:none}
 \n/* canvas-иконки кнопок */\n.btn-icon{width:64%;height:64%;pointer-events:none}\n.abtn-big .btn-icon{width:58%;height:58%}\n#potionBar .btn-icon{width:44%;height:44%}\n
 /* значок «?» и версия на титуле */
-.help-btn{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));
-  width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,150,200,.35);
-  background:transparent;color:var(--rose);font-family:var(--serif);font-size:22px;
-  cursor:pointer;z-index:12}
+.help-btn{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));
+  width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.45);
+  background:transparent;color:#111;font-family:var(--serif);font-size:20px;font-weight:bold;
+  cursor:pointer;z-index:15;line-height:1;padding:0}
+.help-btn:active{transform:scale(.9);filter:brightness(1.4)}
+.help-btn .btn-icon{display:none}
 .help-btn:active{transform:scale(.9);filter:brightness(1.4)}
 .ver-label{position:absolute;left:calc(14px + env(safe-area-inset-left));bottom:calc(16px + env(safe-area-inset-bottom));
   font-size:11px;color:var(--muted);opacity:.6;letter-spacing:.08em;pointer-events:none;z-index:12}
