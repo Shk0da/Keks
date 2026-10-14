@@ -937,6 +937,9 @@ window.UI = (function () {
     $('stickSide').onchange = () => { settings.stickSide = $('stickSide').value; persistSettings(); };
     $('chkFps').onchange = () => { settings.fps = persistSettings(); };
 
+    // canvas-иконки — сразу при старте
+    buildIcons();
+
     // «назад» из Android-обёртки: данж — пауза, лагерь — титул, титул — двойной выход
     window.__keksBack = (exitFn) => {
       if (game.state === 'dungeon') { game.togglePause(); return; }
