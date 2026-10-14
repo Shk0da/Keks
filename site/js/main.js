@@ -109,35 +109,29 @@ window.game = null;
     },
 
     // ===================== состояния =====================
-    // двойной тап по канвасу — удар хлыстом в направлении тапа
+    // одиночный тап по правой части экрана — удар хлыстом в направлении тапа
     initDoubleTap() {
       const cv = document.getElementById('c');
-      let lastTap = 0, lastX = 0, lastY = 0;
       cv.addEventListener('touchend', (e) => {
-        const now = Date.now();
+        if (this.state !== 'dungeon' || this.paused || !this.player) return;
         const t = e.changedTouches[0];
         const px = t.clientX, py = t.clientY;
-        if (now - lastTap < 320 && Math.abs(px - lastX) < 40 && Math.abs(py - lastY) < 40) {
-          // двойной тап: ударить в направлении точки
-          if (this.state === 'dungeon' && !this.paused && this.player) {
-            const p = this.player;
-            if (p.attackCd <= 0 && p.spinT <= 0) {
-              // перевести экран в мировые координаты
-              const wx = (px - cw / 2) / zoom + this.camX;
-              const wy = (py - ch / 2) / zoom + this.camY;
-              const ang = Math.atan2(wy - K.isoY(p.x - 0.5, p.y - 0.5), wx - K.isoX(p.x - 0.5, p.y - 0.5));
-              // мир: инвертировать изометрию для мирового угла
-              p.facing = Math.atan2(
-                (Math.sin(ang) + Math.cos(ang)),
-                (Math.cos(ang) - Math.sin(ang))
-              );
-              p.tryAttack(this);
-            }
-          }
-          lastTap = 0;
-        } else {
-          lastTap = now; lastX = px; lastY = py;
-        }
+        // только правая 60% экрана (левые 40% — джойстик)
+        if (px < cw * 0.40) return;
+        // не тапать по боевым кнопкам
+        const el = document.elementFromPoint(px, py);
+        if (el && el.closest && el.closest('.abtn, .pbtn')) return;
+        const p = this.player;
+        if (p.attackCd > 0 || p.spinT > 0) return;
+        // перевести экран в мировые координаты
+        const wx = (px - cw / 2) / zoom + this.camX;
+        const wy = (py - ch / 2) / zoom + this.camY;
+        const ang = Math.atan2(wy - K.isoY(p.x - 0.5, p.y - 0.5), wx - K.isoX(p.x - 0.5, p.y - 0.5));
+        p.facing = Math.atan2(
+          (Math.sin(ang) + Math.cos(ang)),
+          (Math.cos(ang) - Math.sin(ang))
+        );
+        p.tryAttack(this);
       }, { passive: true });
     },
 

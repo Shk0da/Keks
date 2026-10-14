@@ -68,7 +68,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 @keyframes lowHp{0%,100%{box-shadow:0 0 4px rgba(255,60,90,.4)}50%{box-shadow:0 0 14px rgba(255,60,90,.95)}}
 
 /* джойстик */
-#stickZone{position:absolute;left:0;top:0;bottom:0;width:55%;pointer-events:auto}
+#stickZone{position:absolute;left:0;top:0;bottom:0;width:40%;pointer-events:auto}
 #stickBase{position:absolute;width:120px;height:120px;border-radius:50%;
   border:2px solid rgba(255,150,200,.25);background:radial-gradient(circle,rgba(40,20,55,.35),rgba(40,20,55,.12));
   opacity:0;transition:opacity .15s;left:40px;bottom:60px}
